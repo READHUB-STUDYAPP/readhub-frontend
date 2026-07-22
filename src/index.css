@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+* {
+  font-family: "Manrope", sans-serif;
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 100, 100, 0.5) transparent;
+}
+
+@theme {
+  --color-primary: #2d7ff9;
+  --color-light_primary: #e6f0fe;
+  --color-secondary: #0f172a;
+  --color-tertiary: #4b6481;
+  --color-neutral: #212121;
+  --color-neutral_variant: #696363;
+
+  --color-background: #f5f5f5;
+
+  --font-manrope: "Manrope", sans-serif;
+
+  --text-display_Large: 60px;
+  --text-display_Medium: 48px;
+  --text-display_Small: 36px;
+
+  --text-headline_Large: 32px;
+  --text-headline_Medium: 28px;
+  --text-headline_Small: 24px;
+
+  --text-tittle_Large: 22px;
+  --text-tittle_Medium: 16px;
+  --text-tittle_Small: 14px;
+
+  --text-body_Large: 16px;
+  --text-body_Medium: 14px;
+  --text-body_Small: 12px;
+
+  --text-label_Large: 14px;
+  --text-label_Medium: 12px;
+  --text-label_Small: 11px;
+
+  --breakpoint-xsm: 23rem;
+
+  /* Focus Mode Styles */
+    --color-focusBg: #F5F9FF;
+    --color-focusBlue :#2D7FF9;
+}
+

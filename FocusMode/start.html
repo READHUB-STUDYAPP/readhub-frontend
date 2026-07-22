@@ -1,0 +1,40 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Focus Session</title>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="start-app-shell">
+      <section class="start-phone-frame">
+        <header class="start-focus-header">
+          <div class="focus-icon"><ion-icon name="lock-closed-outline"></ion-icon></div>
+          <h2>Focus Mode</h2>
+          <p>Focus on your reading with zero distractions</p>
+        </header>
+
+        <section class="start-timer-wrap" aria-live="polite">
+          <div class="start-timer-ring" id="startTimerRing">
+            <div class="start-timer-inner">
+              <span id="startTimer">07:30</span>
+              <span class="status">Focus Mode Active</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="session-actions">
+          <button type="button" class="mini-action dark" id="pauseBtn"><ion-icon name="pause-circle-outline"></ion-icon></button>
+          <button type="button" class="mini-action light" id="resetBtn"><ion-icon name="reload-outline"></ion-icon></button>
+          <button type="button" class="end-btn" id="endBtn">End Session</button>
+        </section>
+
+        <div class="session-toast" id="sessionToast"><ion-icon name="checkmark-outline"></ion-icon>Focus Session Started. Stay Focused!</div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

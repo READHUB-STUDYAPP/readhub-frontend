@@ -1,0 +1,116 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Focus Mode</title>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+
+      <section class="phone-frame">
+        <header class="focus-header">
+          <div class="focus-icon"><ion-icon name="lock-open-outline"></ion-icon></div>
+          <h2>Focus Mode</h2>
+          <p>Focus on your reading with zero distractions</p>
+        </header>
+
+        <section class="timer-circle" aria-live="polite">
+          <span id="timer">10:00</span>
+        </section>
+
+        <section
+          class="time-options"
+          role="group"
+          aria-label="Focus session duration"
+        >
+          <button type="button" class="duration-btn active" data-time="10">
+            10mins
+          </button>
+          <button type="button" class="duration-btn starred" data-time="15">
+            15mins
+          </button>
+          <button type="button" class="duration-btn starred" data-time="30">
+            30mins
+          </button>
+          <button type="button" class="duration-btn starred" data-time="45">
+            45mins
+          </button>
+          <button type="button" class="duration-btn starred" data-time="60">
+            60mins
+          </button>
+        </section>
+
+        <section class="focus-setting open" id="focusSettingPanel">
+          <button
+            type="button"
+            class="focus-setting-header"
+            id="focusSettingToggle"
+            aria-expanded="true"
+          >
+            <span>Focus Setting</span>
+            <span class="chevron" aria-hidden="true"><ion-icon name="chevron-down-outline"></ion-icon></span>
+          </button>
+
+          <div class="focus-setting-body" id="focusSettingBody">
+            <p class="setting-label">Notification Mode</p>
+            <div
+              class="notify-modes"
+              role="group"
+              aria-label="Notification mode"
+            >
+              <button type="button" class="mode-btn">
+                <span class="mode-icon"><ion-icon name="notifications"></ion-icon></span>
+                <span>Allow All</span>
+              </button>
+              <button type="button" class="mode-btn active">
+                <span class="mode-icon"><ion-icon name="notifications"></ion-icon></span>
+                <span>Important Only</span>
+              </button>
+              <button type="button" class="mode-btn">
+                <span class="mode-icon"><ion-icon name="notifications-off-circle"></ion-icon></span>
+                <span>Block All</span>
+              </button>
+            </div>
+
+            <p class="setting-label">Allow Notifications From</p>
+            <div class="app-list">
+              <button type="button" class="app-chip">WhatsApp</button>
+              <button type="button" class="app-chip">Email</button>
+              <button type="button" class="app-chip">Telegram</button>
+              <button type="button" class="app-chip">Other</button>
+            </div>
+
+            <p class="setting-label">Sound &amp; Vibration</p>
+            <div class="toggle-list">
+              <label class="toggle-row">
+                <span class="left">
+                  <span class="mini-icon"><ion-icon name="mic-circle-outline"></ion-icon></span>
+                  <span>Sound</span>
+                </span>
+                <input type="checkbox" />
+                <span class="switch"></span>
+              </label>
+              <label class="toggle-row">
+                <span class="left">
+                  <span class="mini-icon"><ion-icon name="volume-medium-outline"></ion-icon></span>
+                  <span>Vibration</span>
+                </span>
+                <input type="checkbox" />
+                <span class="switch"></span>
+              </label>
+            </div>
+
+            <button type="button" class="done-btn" id="doneBtn">Done</button>
+          </div>
+        </section>
+
+        <button id="startBtn" type="button">Start Focus Session</button>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

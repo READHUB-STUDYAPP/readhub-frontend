@@ -1,0 +1,485 @@
+﻿/* ===== Focus Setup Page (index.html) ===== */
+:root {
+  --bg-gray: #a7a7a7;
+  --panel-pink: #ead8de;
+  --card-pink: #ecdde1;
+  --card-pink-2: #f0dde1;
+  --text-main: #2f2329;
+  --text-muted: #7c6f76;
+  --ring: #f3e6e7;
+  --blue: #3e75df;
+  --blue-dark: #2f62ce;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100dvh;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  background: var(--bg-gray);
+  color: var(--text-main);
+  overflow-x: hidden;
+}
+
+.app-shell {
+  width: 100%;
+  min-height: 100dvh;
+  margin: 0;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  display: flex;
+  flex-direction: column;
+}
+
+.screen-title {
+  margin: 8px 12px;
+  font-size: clamp(28px, 8vw, 36px);
+  line-height: 1;
+  font-weight: 500;
+  color: #0f83d0;
+}
+
+.phone-frame {
+  margin: 0;
+  flex: 1;
+  min-height: 0;
+  padding: clamp(24px, 6vw, 34px) 0 clamp(20px, 4vw, 22px);
+  background: repeating-linear-gradient(
+    to right,
+    var(--panel-pink) 0,
+    var(--panel-pink) 58px,
+    #eaf2f9 58px,
+    #eaf2f9 72px
+  );
+}
+
+.focus-header {
+  text-align: center;
+}
+
+.focus-icon {
+  width: clamp(30px, 9vw, 34px);
+  height: clamp(30px, 9vw, 34px);
+  border-radius: 50%;
+  margin: 0 auto 12px;
+  display: grid;
+  place-items: center;
+  background: var(--blue);
+  color: #fff;
+  font-size: 16px;
+}
+
+.focus-header h2 {
+  margin: 0;
+  font-size: clamp(24px, 7vw, 31px);
+  font-weight: 500;
+}
+
+.focus-header p {
+  margin: 8px auto 0;
+  max-width: 78%;
+  color: var(--text-muted);
+  font-size: clamp(11px, 3vw, 12px);
+}
+
+.timer-circle {
+  width: clamp(156px, 48vw, 190px);
+  height: clamp(156px, 48vw, 190px);
+  margin: clamp(28px, 9vw, 48px) auto clamp(24px, 7vw, 34px);
+  border-radius: 50%;
+  border: 8px solid var(--ring);
+  display: grid;
+  place-items: center;
+}
+
+#timer {
+  font-size: clamp(42px, 13vw, 52px);
+  font-weight: 600;
+}
+
+.time-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(12px, 4.4vw, 18px) clamp(6px, 2.8vw, 10px);
+  justify-items: center;
+  align-items: center;
+  margin: 0 8px 22px;
+}
+
+.duration-btn {
+  border: 0;
+  background: transparent;
+  color: #363036;
+  font-size: clamp(12px, 3.6vw, 15px);
+  padding: 5px 7px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.duration-btn.active {
+  background: var(--blue);
+  color: #fff;
+}
+
+.duration-btn.starred::after {
+  content: "*";
+  color: #f66b2d;
+  margin-left: 1px;
+  font-weight: 700;
+}
+
+.focus-setting {
+  margin: 10px 0 26px;
+  background: #ffe5e5;
+  opacity: 0.8;
+  overflow: hidden;
+}
+
+.focus-setting-header {
+  width: 100%;
+  border: 0;
+  cursor: pointer;
+  background: #ffe5e5;
+  color: var(--text-main);
+  font-size: 12px;
+  text-align: left;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chevron {
+  font-size: 18px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.focus-setting:not(.open) .chevron {
+  transform: rotate(180deg);
+}
+
+.focus-setting-body {
+  padding: 12px 8px 16px;
+  background-color: transparent !important;
+}
+
+.focus-setting:not(.open) .focus-setting-body {
+  display: none;
+}
+
+.setting-label {
+  margin: 0 0 10px;
+  font-size: clamp(12px, 3.5vw, 14px);
+}
+
+.notify-modes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.mode-btn {
+  border: 1px solid #c5aeb6;
+  background-color: transparent;
+  color: #3f3540;
+  border-radius: 10px;
+  min-height: clamp(50px, 14vw, 56px);
+  display: flex;
+  cursor: pointer;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: clamp(10px, 2.9vw, 12px);
+  line-height: 1;
+}
+
+.mode-icon {
+  font-size: 14px;
+}
+
+.mode-btn.active {
+  color: var(--blue);
+  border-color: #7e96db;
+  background: #f0ebff;
+}
+
+.app-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 20px;
+  margin-bottom: 14px;
+}
+
+.app-chip {
+  border: 1px solid #c5aeb6;
+  background: #ecdde1;
+  color: #5f4f56;
+  border-radius: 9px;
+  height: clamp(30px, 8.2vw, 34px);
+  font-size: clamp(11px, 3vw, 12px);
+  cursor: pointer;
+}
+
+.toggle-list {
+  display: grid;
+  gap: 7px;
+}
+
+.toggle-row {
+  border: 1px solid #c5aeb6;
+  border-radius: 10px;
+  background: #ecdde1;
+  min-height: clamp(34px, 9.4vw, 38px);
+  padding: 0 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+.toggle-row .left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: clamp(11px, 3.1vw, 12px);
+}
+
+.mini-icon {
+  font-size: 11px;
+}
+
+.toggle-row input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.switch {
+  width: 42px;
+  height: 20px;
+  background: #dbccd0;
+  border-radius: 999px;
+  position: relative;
+}
+
+.switch::after {
+  content: "";
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s ease;
+}
+
+.toggle-row input:checked + .switch {
+  background: #9cb6f7;
+}
+
+.toggle-row input:checked + .switch::after {
+  transform: translateX(22px);
+}
+
+.done-btn {
+  display: block;
+  margin: 24px auto 4px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--blue);
+  color: #fff;
+  width: clamp(80px, 24vw, 88px);
+  height: clamp(30px, 8vw, 34px);
+  cursor: pointer;
+  font-size: clamp(13px, 3.5vw, 15px);
+  line-height: 1;
+}
+
+#startBtn {
+  display: block;
+  width: calc(100% - clamp(30px, 10vw, 48px));
+  margin: 0 auto;
+  border: 0;
+  cursor: pointer;
+  border-radius: 999px;
+  padding: clamp(10px, 2.8vw, 12px) 10px;
+  color: #fff;
+  font-size: clamp(14px, 4vw, 16px);
+  font-weight: 400;
+  background: linear-gradient(90deg, var(--blue), #3f86f0);
+}
+
+#startBtn:active {
+  background: linear-gradient(90deg, var(--blue-dark), #3476d6);
+}
+
+/* ===== Start Focus Session Page (start.html) ===== */
+.start-app-shell {
+  width: 100%;
+  min-height: 100dvh;
+  margin: 0;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  display: flex;
+  flex-direction: column;
+}
+
+.start-phone-frame {
+  margin: 0;
+  flex: 1;
+  min-height: 0;
+  padding: clamp(78px, 20vw, 96px) 0 clamp(20px, 5vw, 24px);
+  background: repeating-linear-gradient(
+    to right,
+    var(--panel-pink) 0,
+    var(--panel-pink) 58px,
+    #eaf2f9 58px,
+    #eaf2f9 72px
+  );
+}
+
+.start-focus-header {
+  text-align: center;
+}
+
+.start-focus-header h2 {
+  margin: 0;
+  font-size: clamp(22px, 7vw, 30px);
+  font-weight: 500;
+}
+
+.start-focus-header p {
+  margin: 8px auto 0;
+  max-width: 250px;
+  color: var(--text-muted);
+  font-size: clamp(11px, 3vw, 12px);
+}
+
+.start-timer-wrap {
+  display: flex;
+  justify-content: center;
+  margin: clamp(34px, 10vw, 52px) 0 clamp(26px, 8vw, 38px);
+}
+
+.start-timer-ring {
+  width: clamp(162px, 50vw, 198px);
+  height: clamp(162px, 50vw, 198px);
+  border-radius: 50%;
+  padding: 7px;
+  background: conic-gradient(
+    var(--blue) var(--progress, 0deg),
+    var(--ring) var(--progress, 0deg)
+  );
+}
+
+.start-timer-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(239, 222, 225, 0.55);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#startTimer {
+  font-size: clamp(38px, 12vw, 56px);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.start-timer-inner .status {
+  color: var(--blue);
+  margin-top: 8px;
+  font-size: clamp(11px, 3.2vw, 12px);
+  font-weight: 400;
+}
+
+.session-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 4vw, 18px);
+}
+
+.mini-action {
+  width: clamp(34px, 9.6vw, 38px);
+  height: clamp(34px, 9.6vw, 38px);
+  border-radius: 7px;
+  border: 1px solid #4c3f4d;
+  font-size: clamp(16px, 4.4vw, 18px);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mini-action.dark {
+  background: #13192f;
+  color: #fff;
+  border-color: #13192f;
+}
+
+.mini-action.light {
+  background: #e7dce0;
+  color: #332b34;
+}
+
+.end-btn {
+  border: 0;
+  border-radius: 8px;
+  height: clamp(34px, 9.6vw, 38px);
+  min-width: clamp(96px, 30vw, 112px);
+  padding: 0 16px;
+  color: #fff;
+  background: #df0000;
+  font-size: clamp(13px, 3.7vw, 14px);
+  cursor: pointer;
+}
+
+.session-toast {
+  width: calc(100% - clamp(12px, 4vw, 20px));
+  margin: clamp(72px, 18vh, 190px) auto 0;
+  background: rgba(252, 231, 231, 0.75);
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3f343b;
+  font-size: clamp(12px, 3.5vw, 14px);
+  gap: 10px;
+  text-align: center;
+  padding: 0 10px;
+}
+
+.session-toast ion-icon {
+  background-color: #2f62ce;
+  color: white;
+  border-radius: 50px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 340px) {
+  .notify-modes {
+    grid-template-columns: 1fr;
+  }
+
+  .app-list {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .focus-setting-header {
+    font-size: 11px;
+  }
+}
