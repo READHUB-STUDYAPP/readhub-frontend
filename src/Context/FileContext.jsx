@@ -263,22 +263,18 @@ export function FileProvider({ children }) {
   //Delete book
   const deleteBook = useCallback(
     async (bookId) => {
-      try {
-        await backendApi.deleteBook(bookId);
-        setFiles((prev) => prev.filter((book) => book._id !== bookId));
-        setCurrentPage((prev) => {
-          const updated = { ...prev };
-          delete updated[bookId];
-          return updated;
-        });
-        setHighlights((prev) => {
-          const next = { ...prev };
-          delete next[bookId];
-          return next;
-        });
-      } catch (error) {
-        throw error;
-      }
+      await backendApi.deleteBook(bookId);
+      setFiles((prev) => prev.filter((book) => book._id !== bookId));
+      setCurrentPage((prev) => {
+        const updated = { ...prev };
+        delete updated[bookId];
+        return updated;
+      });
+      setHighlights((prev) => {
+        const next = { ...prev };
+        delete next[bookId];
+        return next;
+      });
     },
     [selectedFile2],
   );
