@@ -2,13 +2,13 @@ import axios from "axios";
 import { backendApi } from "../services/api";
 
 /**
- * Upload file to cloudinary using signed upload
+ * Object-storage upload (MinIO / S3-compatible), via a backend-issued presigned
+ * PUT URL. Replaces the old Cloudinary signed-upload. Export names are kept so
+ * existing imports (FileContext, Profile) don't change.
  */
 
-// Cloudinary plan limit (current project): 10MB per upload for raw files.
-// This limit is enforced by Cloudinary and cannot be bypassed without upgrading the plan
-// or using a different storage provider.
-const MAX_CLOUDINARY_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB
+// Backend book-file route caps uploads at 100MB.
+const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 
 const formatBytes = (bytes) => {
   const b = Number(bytes || 0);
@@ -17,154 +17,62 @@ const formatBytes = (bytes) => {
   return `${mb.toFixed(mb >= 10 ? 0 : 1)}MB`;
 };
 
+const extOf = (name = "", contentType = "") =>
+  (name.includes(".") ? name.split(".").pop() : contentType.split("/")[1] || "bin")
+    .toLowerCase();
+
+// Convert a data URL (data:image/png;base64,....) or Blob/File to a Blob.
+const toBlob = (input) => {
+  if (input instanceof Blob) return input;
+  if (typeof input === "string" && input.startsWith("data:")) {
+    const [meta, b64] = input.split(",");
+    const contentType = meta.slice(5, meta.indexOf(";")) || "application/octet-stream";
+    const bytes = atob(b64);
+    const arr = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+    return new Blob([arr], { type: contentType });
+  }
+  throw new Error("Unsupported upload input");
+};
+
+// PUT a blob/file straight to storage using the presigned URL.
+const putToStorage = async (uploadUrl, body, contentType, onProgress) => {
+  await axios.put(uploadUrl, body, {
+    headers: { "Content-Type": contentType },
+    onUploadProgress: (e) => {
+      if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100));
+    },
+  });
+};
+
+/** Upload a book file (pdf/doc/…) and return its public URL. */
 export const uploadToCloudinary = async (
   file,
-  folder = "documents",
-  resourceType = "raw",
+  _folder = "documents",
+  _resourceType = "raw",
   onProgress = null,
 ) => {
-  try {
-    if (file?.size && file.size > MAX_CLOUDINARY_UPLOAD_BYTES) {
-      throw new Error(
-        `File is ${formatBytes(file.size)}. This project’s current Cloudinary upload limit is ${formatBytes(MAX_CLOUDINARY_UPLOAD_BYTES)}. Please upload a smaller file or upgrade the Cloudinary plan.`,
-      );
-    }
-
-    const signatureData = await backendApi.getCloudinarySignature();
-
-    const {
-      signature,
-      timestamp,
-      cloudName,
-      apiKey,
-      folder: uploadFolder,
-      allowed_formats,
-      resource_type,
-    } = signatureData;
-
-    console.log("Uploading file to Cloudinary...");
-
-    const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
-
-    // Create form data for Cloudinary
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("api_key", apiKey);
-    formData.append("timestamp", timestamp);
-    formData.append("signature", signature);
-    formData.append("folder", uploadFolder);
-    formData.append("allowed_formats", allowed_formats);
-    formData.append("resource_type", "raw");
-
-    console.log("FormData:", Object.fromEntries(formData.entries()));
-
-    const response = await axios.post(cloudinaryUrl, formData, {
-      onUploadProgress: (ProgressEvent) => {
-        if (onProgress && ProgressEvent.total) {
-          const percent = Math.round(
-            (ProgressEvent.loaded / ProgressEvent.total) * 100,
-          );
-          onProgress(percent);
-        }
-      },
-    });
-
-    return {
-      url: response.data.secure_url,
-      publicId: response.data.public_id,
-      resourceType: response.data.resource_type,
-      format: response.data.format,
-      bytes: response.data.bytes,
-    };
-  } catch (error) {
-    console.error("Cloudinary upload error:", error);
-    if (error.response) {
-      // Server responded with error
-      throw new Error(
-        error.response.data?.error?.message ||
-          `Upload failed: ${error.response.status}`,
-      );
-    } else if (error.request) {
-      // Request made but no response
-      throw new Error("No response from server");
-    } else {
-      // Other errors
-      throw error;
-    }
+  if (file?.size && file.size > MAX_UPLOAD_BYTES) {
+    throw new Error(
+      `File is ${formatBytes(file.size)}. Max upload is ${formatBytes(MAX_UPLOAD_BYTES)}.`,
+    );
   }
+  const contentType = file?.type || "application/octet-stream";
+  const ext = extOf(file?.name, contentType);
+  const { uploadUrl, publicUrl } = await backendApi.getCloudinarySignature({ ext, contentType });
+  await putToStorage(uploadUrl, file, contentType, onProgress);
+  return { url: publicUrl };
 };
 
-/**
- * Upload cover image to cloudinary
- */
-export const uploadCoverToCloudinary = async (
-  base64Image,
-  folder = "documents",
-) => {
-  try {
-    const signatureData = await backendApi.getCoverSignature(folder);
-
-    const {
-      signature,
-      timestamp,
-      cloudName,
-      apiKey,
-      folder: uploadFolder,
-    } = signatureData;
-
-    console.log("Uploading cover to cloudinary...");
-
-    const formData = new FormData();
-    formData.append("file", base64Image);
-    formData.append("signature", signature);
-    formData.append("timestamp", timestamp);
-    formData.append("api_key", apiKey);
-    formData.append("folder", uploadFolder || folder);
-
-    console.log(signatureData);
-    console.log("FormData:", Object.fromEntries(formData.entries()));
-
-    const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
-
-    const response = await fetch(cloudinaryUrl, {
-      method: "POST",
-      body: formData,
-    });
-
-    console.log(cloudinaryUrl);
-    if (!response.ok) {
-      const error = await response.text();
-      console.error("Cloudinary error:", error);
-      throw new Error(`Cover upload failed: ${response.status}`);
-    }
-
-    const result = await response.json();
-
-    return {
-      url: result.secure_url,
-      publicId: result.public_id,
-    };
-  } catch (error) {
-    console.error("Error during Cloudinary cover upload:", error);
-    throw error;
-  }
+/** Upload a cover image (data URL or Blob) and return its public URL. */
+export const uploadCoverToCloudinary = async (image, _folder = "covers") => {
+  const blob = toBlob(image);
+  const contentType = blob.type || "image/jpeg";
+  const ext = extOf("", contentType);
+  const { uploadUrl, publicUrl } = await backendApi.getCoverSignature({ ext, contentType });
+  await putToStorage(uploadUrl, blob, contentType, null);
+  return { url: publicUrl };
 };
 
-/**
- * Delete file from Cloudinary
- */
-export const deleteFromCloudinary = async (publicId, resourceType = "raw") => {
-  try {
-    // Your backend should handle deletion
-    // This is just a reference - actual deletion should be done server-side
-    console.log("Deleting from Cloudinary:", publicId);
-
-    // Call your backend to delete
-    // Backend will use: cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
-
-    return true;
-  } catch (error) {
-    console.error("Cloudinary delete error:", error);
-    throw error;
-  }
-};
+/** Deletion is handled server-side (no-op client shim, kept for import compatibility). */
+export const deleteFromCloudinary = async () => true;
