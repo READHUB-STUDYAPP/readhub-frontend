@@ -1,0 +1,64 @@
+name: Build & publish image
+
+# The frontend bakes VITE_* at build time, so it is built PER ENVIRONMENT:
+# staging -> api.staging.readhub.study, main -> api.readhub.study. On push to
+# staging/main it builds with the right args, pushes to GHCR, and dispatches a
+# deploy to readhub-infra.
+on:
+  push:
+    branches: [staging, main]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/readhub-studyapp/readhub-frontend
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve target environment + VITE vars
+        id: env
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "moving=production"    >> "$GITHUB_OUTPUT"
+            echo "dispatch=deploy-prod" >> "$GITHUB_OUTPUT"
+            echo "api=https://api.readhub.study" >> "$GITHUB_OUTPUT"
+          else
+            echo "moving=staging"        >> "$GITHUB_OUTPUT"
+            echo "dispatch=deploy-staging" >> "$GITHUB_OUTPUT"
+            echo "api=https://api.staging.readhub.study" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push (VITE_* baked per env)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          build-args: |
+            VITE_API_BASE_URL=${{ steps.env.outputs.api }}
+            VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          tags: |
+            ${{ env.IMAGE }}:sha-${{ github.sha }}
+            ${{ env.IMAGE }}:${{ steps.env.outputs.moving }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trigger infrastructure deploy
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.INFRA_DISPATCH_TOKEN }}
+          repository: READHUB-STUDYAPP/readhub-infra
+          event-type: ${{ steps.env.outputs.dispatch }}
+          client-payload: '{"service": "readhub-frontend", "sha": "${{ github.sha }}"}'

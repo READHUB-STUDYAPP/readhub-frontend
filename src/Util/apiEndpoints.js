@@ -1,8 +1,4 @@
 export const baseURL = `${import.meta.env.VITE_API_BASE_URL}/api/`;
-export const CLOUDINARY_NAME = import.meta.env.VITE_CLOUDINARY_NAME;
-
-export const getCloudinaryUploadUrl = (cloudName) =>
-  `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
 
 export const apiEndpoints = {
     LOGIN: "auth/login",
