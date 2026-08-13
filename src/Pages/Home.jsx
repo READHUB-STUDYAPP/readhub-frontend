@@ -78,6 +78,11 @@ const Home = () => {
     navigate(`/viewpdf/${file._id}`);
   };
 
+  const openEpub = (file) => {
+    setSelectedFile(file);
+    navigate(`/viewepub/${file._id}`);
+  };
+
   function filterBooks(books) {
     return books.filter((b) => {
       const page = currentPage[b._id] ?? b.lastPageRead ?? 0;

@@ -37,16 +37,22 @@ See [.env.example](.env.example):
 | `VITE_GOOGLE_CLIENT_ID` | Google OAuth client id (matches backend) |
 | `VITE_CLOUDINARY_NAME` | Public Cloudinary cloud name |
 
-## Docker
+## Deployment (VPS via Docker)
+
+The app is built into static files and served by nginx (SPA fallback in
+[`nginx/frontend.conf`](nginx/frontend.conf)). `VITE_*` values are baked in at
+**build time**, so pass them as build args.
 
 ```bash
 docker build \
-  --build-arg VITE_API_BASE_URL=https://api.readhub.example.com \
+  --build-arg VITE_API_BASE_URL=https://readhub.example.com \
   --build-arg VITE_GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com \
   --build-arg VITE_CLOUDINARY_NAME=your_cloud \
   -t readhub-frontend .
 docker run -p 8080:80 readhub-frontend
 ```
 
-Deployment (compose / multi-cloud Terraform) is managed in the
-**readhub-infra** repository. Netlify config is also included (`netlify.toml`).
+On the server, copy `.env.example` to `.env` and fill in the real values first
+(the build reads them). Orchestration for the VPS — the edge nginx that serves
+this app and proxies `/api` to the backend, TLS, etc. — lives in the
+**readhub-infra** repository.
