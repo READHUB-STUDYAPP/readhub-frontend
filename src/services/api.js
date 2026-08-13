@@ -37,13 +37,14 @@ api.interceptors.response.use(
 );
 
 export const backendApi = {
-  getCloudinarySignature: async () => {
-    const response = await api.get("/api/cloudinary-signature/pdf");
+  // Returns a presigned PUT { uploadUrl, publicUrl, method, contentType, key }.
+  getCloudinarySignature: async (params = {}) => {
+    const response = await api.get("/api/cloudinary-signature/pdf", { params });
     return response.data;
   },
 
-  getCoverSignature: async () => {
-    const response = await api.get("/api/cloudinary-signature/image");
+  getCoverSignature: async (params = {}) => {
+    const response = await api.get("/api/cloudinary-signature/image", { params });
     return response.data;
   },
 

@@ -94,26 +94,22 @@ const Profile = () => {
         const { default: axios } = await import('axios');
 
         try {
-            // getting signature from backend
-            const { data: signatureData } = await axiosConfig.get(apiEndpoints.CLOUDINARY_SIGNATURE);
+            // get a presigned PUT URL from the backend, then upload straight to storage
+            const contentType = file?.type || 'image/jpeg';
+            const ext = (file?.name?.split('.').pop() || contentType.split('/')[1] || 'jpg').toLowerCase();
+            const { data: signatureData } = await axiosConfig.get(apiEndpoints.CLOUDINARY_SIGNATURE, {
+                params: { ext, contentType },
+            });
 
-            // Validate cloudName was returned by backend
-            if (!signatureData?.cloudName) {
-                throw new Error('Backend did not provide Cloudinary cloud name. Check that CLOUDINARY_CLOUD_NAME is set on the backend server.');
+            if (!signatureData?.uploadUrl) {
+                throw new Error('Backend did not provide an upload URL.');
             }
 
-            // uploading image to cloudinary
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('api_key', signatureData.apiKey);
-            formData.append('timestamp', signatureData.timestamp);
-            formData.append('signature', signatureData.signature);
-            formData.append('folder', signatureData.folder);
+            await axios.put(signatureData.uploadUrl, file, {
+                headers: { 'Content-Type': contentType },
+            });
 
-            const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${signatureData.cloudName}/image/upload`;
-            const { data: cloudinaryData } = await axios.post(cloudinaryUrl, formData);
-
-            const newProfilePicture = cloudinaryData.secure_url;
+            const newProfilePicture = signatureData.publicUrl;
 
             // 3. Update user profile
             const { data: updatedUserData } = await axiosConfig.patch(apiEndpoints.UPDATE_PROFILE, {
