@@ -1,7 +1,8 @@
 # ReadHub Frontend
 
 React 19 + Vite single-page app for the ReadHub reading platform. Talks to the
-**readhub-backend** API and integrates Google OAuth and Cloudinary uploads.
+**readhub-backend** API and integrates Google OAuth and direct-to-storage uploads
+via backend-issued **presigned S3 (MinIO) URLs**.
 
 ## Tech stack
 
@@ -35,7 +36,10 @@ See [.env.example](.env.example):
 |---|---|
 | `VITE_API_BASE_URL` | Backend origin (no trailing slash, no `/api`) |
 | `VITE_GOOGLE_CLIENT_ID` | Google OAuth client id (matches backend) |
-| `VITE_CLOUDINARY_NAME` | Public Cloudinary cloud name |
+
+Uploads no longer need a storage-provider variable: the frontend asks the backend
+for a **presigned PUT URL** and uploads the file straight to it, then stores the
+returned public URL.
 
 ## Deployment (VPS via Docker)
 
@@ -45,14 +49,19 @@ The app is built into static files and served by nginx (SPA fallback in
 
 ```bash
 docker build \
-  --build-arg VITE_API_BASE_URL=https://readhub.example.com \
+  --build-arg VITE_API_BASE_URL=https://api.readhub.study \
   --build-arg VITE_GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com \
-  --build-arg VITE_CLOUDINARY_NAME=your_cloud \
   -t readhub-frontend .
 docker run -p 8080:80 readhub-frontend
 ```
 
-On the server, copy `.env.example` to `.env` and fill in the real values first
-(the build reads them). Orchestration for the VPS — the edge nginx that serves
-this app and proxies `/api` to the backend, TLS, etc. — lives in the
-**readhub-infra** repository.
+## Deployment (CI)
+
+Pushing to **`staging`** or **`main`** triggers `.github/workflows/build.yml`,
+which resolves `VITE_API_BASE_URL` per environment (`api.staging.readhub.study`
+for `staging`, `api.readhub.study` for `main`), builds the image with the `VITE_*`
+values baked in, pushes it to GHCR, and dispatches a deploy to the
+**readhub-infra** repo. Because `VITE_*` is compile-time, each environment gets
+its own image. Developers ship by merging PRs — the edge Traefik, TLS and the
+shared single-box topology live in
+[readhub-infra](https://github.com/READHUB-STUDYAPP/readhub-infra).
