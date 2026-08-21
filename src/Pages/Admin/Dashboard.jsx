@@ -47,15 +47,49 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            <div className="middle flex flex-row">
-                <div className="statistics flex flex-3"></div>
-                <div className="PopularBooks flex flex-1 flex-col">
-                    <div><span>Popular books</span><span>View all</span></div>
-                    <div></div>
+            <div className="middleElement flex flex-row gap-10 px-7">
+                <div className="statistics bg-gray-200 flex items-end gap-25 flex-row flex-3 p-10 border border-blue-400 rounded-lg">
+                    <div className='flex flex-col-reverse gap-12 pb-20'><span>10</span><span>20</span><span>30</span><span>40</span><span>50</span></div>
+                    <div className='flex flex-col items-center gap-8'>
+                        <div className='flex flex-row gap-17 items-end'><span className='bg-blue-500 w-2 h-7 rounded-t-lg p-3'></span><span className='bg-blue-500 w-2 h-15 rounded-t-lg p-3'></span><span className='bg-blue-500 w-2 h-20 rounded-t-lg p-3'></span><span className='bg-blue-500 w-2 h-7 rounded-t-lg p-3'></span><span className='bg-blue-500 w-2 h-17 rounded-t-lg p-3'></span><span className='bg-blue-500 w-2 h-7 rounded-t-lg p-3'></span><span className='bg-blue-500 w-2 h-30 rounded-t-lg p-3'></span></div>
+                        <div className='flex flex-row gap-20 items-center'><span>M</span><span>T</span><span>W</span><span>TH</span><span>F</span><span>SA</span><span>S</span></div>
+                    </div>
+                </div>
+                <div className="PopularBooks flex flex-1 flex-col p-4 rounded-lg border border-blue-400 bg-gray-200 gap-7">
+                    <div className='flex flex-row justify-between items-center'><span className='text-base font-medium'>Popular books</span><span className='text-xs font-medium underline'>View all</span></div>
+                    <div className='flex flex-col gap-4 items-start'>
+                        <div className='book flex flex-row items-center gap-2'>
+                            <div><img src={ReadHubImages.trendingbook1} alt="" /></div>
+                            <div className='flex flex-col items-start'><span className='text-base text-gray-900 font-medium'>Atomic habits</span><span className='text-sm text-gray-700'>James Clear</span><span className='text-xs text-gray-500 pt-2'>100 readers</span></div>
+                        </div>
+                        <div className='book flex flex-row items-center gap-2'>
+                            <div><img src={ReadHubImages.trendingbook2} alt="" /></div>
+                            <div className='flex flex-col items-start'><span className='text-base text-gray-900 font-medium'>Another Kind</span><span className='text-sm text-gray-700'>James Clear</span><span className='text-xs text-gray-500 pt-2'>150 readers</span></div>
+                        </div>
+                        <div className='book flex flex-row items-center gap-2'>
+                            <div><img src={ReadHubImages.trendingbook3} alt="" /></div>
+                            <div className='flex flex-col items-start'><span className='text-base text-gray-900 font-medium'>Black Hearts</span><span className='text-sm text-gray-700'>James Clear</span><span className='text-xs text-gray-500 pt-2'>20 readers</span></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div className="bottom"></div>
+            <div className="bottomElement px-7 pt-7 flex flex-col gap-2">
+                <div><span className='text-lg font-medium'>Recent reader activity</span></div>
+                <div className='flex flex-col gap-2'>
+                    <div className='flex flex-row justify-between items-center pr-20'>
+                        <div className='text-sm'><span>Amaka Okafor read for 25 minutes - </span><span className='text-blue-600'>Atomic Habits</span></div><div className='text-sm'><span>2m ago</span></div>
+                    </div>
+
+                    <div className='flex flex-row justify-between items-center pr-20'>
+                        <div className='text-sm'><span>James Kingston read for 15 minutes - </span><span className='text-blue-600'>Another Kind</span></div><div className='text-sm'><span>5m ago</span></div>
+                    </div>
+
+                    <div className='flex flex-row justify-between items-center pr-20'>
+                        <div className='text-sm'><span>Daniel Bright read for 40 minutes - </span><span className='text-blue-600'>Black Hearts</span></div><div className='text-sm'><span>7m ago</span></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
       </div>
