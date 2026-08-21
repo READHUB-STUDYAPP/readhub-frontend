@@ -54,6 +54,13 @@ import playButtonIcon from "../assets/playButton.png"
 import confettiIcon from "../assets/confetti.png"
 import blueCircles from "../assets/blueCircles.svg"
 import blueSparkIcon from "../assets/blueFlash.svg"
+import ReadHubLogo from "../assets/ReadHubLogo.png"
+import ProperReadHubLogo from "../assets/ReadHubLogo.svg"
+import booksIconSvg from "../assets/books.svg"
+import dashboardIcon from "../assets/DashboardIcon.svg"
+import peopleIcon from "../assets/people.svg"
+import logoutSvgIcon from "../assets/logoutSvgIcon.svg"
+import dropdownSvg from "../assets/dropdownIcon.svg"
 
 
 export const ReadHubImages = {
@@ -113,4 +120,10 @@ export const ReadHubImages = {
     confettiIcon,
     blueCircles,
     blueSparkIcon,
+    ReadHubLogo,
+    ProperReadHubLogo,
+    peopleIcon,
+    dashboardIcon,
+    booksIconSvg,
+    dropdownSvg,
 }

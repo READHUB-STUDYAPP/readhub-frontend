@@ -27,6 +27,7 @@ import Profile from "./Pages/Profile/Profile";
 import Settings from "./Pages/Profile/Settings";
 import Statistics from "./Pages/Profile/Statistics";
 import ViewEpub from "./Features/ViewEpub";
+import Dashboard from "./Pages/Admin/Dashboard";
 
 function App() {
   const location = useLocation();
@@ -93,6 +94,7 @@ function App() {
         <Route path="/forgotpassword" element={<ForgotPassword />} />
         <Route path="/otp" element={<Otp />} />
         <Route path="/newpassword" element={<NewPassword />} />
+        <Route path="/admin/dashboard" element={<Dashboard/>}/>
       </Routes>
 
       {showNav && <Nav />}
