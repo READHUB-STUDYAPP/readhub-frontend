@@ -18,7 +18,12 @@ const Dashboard = () => {
               <div className='flex flex-row gap-2 items-center'><span><img src={ReadHubImages.booksIconSvg} alt="" /></span><span>Books</span></div>
             </div>
           </div>
-          <div className="profileDetails"></div>
+
+          <div className="bottom profileDetails flex flex-col gap-6 justify-center items-start">
+            <div className=' w-full text-white'><hr/></div>
+            <div className='flex flex-row items-center gap-4'><div className='w-9 h-9'><img src={ReadHubImages.blankCircleSvgIcon} alt="" /></div><div className='flex flex-col'><span className='text-sm text-gray-50 font-medium'>Best Quality</span><span className='text-xs text-gray-50 font-light'>Admin</span></div></div>
+            <div className='flex flex-row gap-10 items-center'><span className='w-3 h-3'><img src={ReadHubImages.logoutSvgIcon} alt="" /></span><span className='text-xs text-gray-50'>Logout</span></div>
+          </div>
         </div>
 
         <div className="right w-full py-8 flex flex-col flex-8 bg-gray-50">

@@ -61,6 +61,7 @@ import dashboardIcon from "../assets/DashboardIcon.svg"
 import peopleIcon from "../assets/people.svg"
 import logoutSvgIcon from "../assets/logoutSvgIcon.svg"
 import dropdownSvg from "../assets/dropdownIcon.svg"
+import blankCircleSvgIcon from "../assets/blankCircle.svg"
 
 
 export const ReadHubImages = {
@@ -126,4 +127,6 @@ export const ReadHubImages = {
     dashboardIcon,
     booksIconSvg,
     dropdownSvg,
+    logoutSvgIcon,
+    blankCircleSvgIcon
 }
