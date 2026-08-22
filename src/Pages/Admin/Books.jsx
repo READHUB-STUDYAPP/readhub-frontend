@@ -1,5 +1,6 @@
 import React from 'react'
 import { ReadHubImages } from '../../assets/asset'
+import { Link } from 'react-router-dom';
 
 const Books = () => {
 
@@ -22,9 +23,9 @@ const Books = () => {
               </span>
             </div>
             <div className="navitems text-sm text-white font-normal flex flex-col gap-10">
-              <div className='flex flex-row gap-2 items-center'><span><img src={ReadHubImages.dashboardIcon} alt="" /></span><span>Dashboard</span></div>
-              <div className='flex flex-row gap-2 items-center '><span><img src={ReadHubImages.peopleIcon} alt="" /></span><span>Readers</span></div>
-              <div className='flex flex-row gap-2 items-center bg-blue-700 px-4 py-2.5 rounded-lg'><span><img src={ReadHubImages.booksIconSvg} alt="" /></span><span>Books</span></div>
+              <div className='flex flex-row gap-2 items-center'><span><img src={ReadHubImages.dashboardIcon} alt="" /></span><span><Link to="/admin/dashboard">Dashboard</Link></span></div>
+              <div className='flex flex-row gap-2 items-center '><span><img src={ReadHubImages.peopleIcon} alt="" /></span><span><Link to="/admin/readers">Readers</Link></span></div>
+              <div className='flex flex-row gap-2 items-center bg-blue-700 px-4 py-2.5 rounded-lg'><span><img src={ReadHubImages.booksIconSvg} alt="" /></span><span><Link to="/admin/books">Books</Link></span></div>
             </div>
           </div>
 

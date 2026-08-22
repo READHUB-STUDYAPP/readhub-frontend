@@ -1,5 +1,6 @@
 import React from 'react';
 import { ReadHubImages } from '../../assets/asset';
+import { Link } from 'react-router-dom';
 
 const Readers = () => {
 
@@ -26,19 +27,19 @@ const Readers = () => {
                 <span>
                   <img src={ReadHubImages.dashboardIcon} alt="" />
                 </span>
-                <span>Dashboard</span>
+                <span><Link to="/admin/dashboard">Dashboard</Link></span>
               </div>
               <div className="flex flex-row gap-2 items-center bg-blue-700 px-4 py-2.5 rounded-lg">
                 <span>
                   <img src={ReadHubImages.peopleIcon} alt="" />
                 </span>
-                <span>Readers</span>
+                <span><Link to="/admin/readers">Readers</Link></span>
               </div>
               <div className="flex flex-row gap-2 items-center">
                 <span>
                   <img src={ReadHubImages.booksIconSvg} alt="" />
                 </span>
-                <span>Books</span>
+                <span><Link to="/admin/books">Books</Link></span>
               </div>
             </div>
           </div>
@@ -155,7 +156,7 @@ const Readers = () => {
         </table>
       </div>
     </div>
-    
+
         </div>
       </div>
     </div>
