@@ -5,7 +5,7 @@ const Books = () => {
   return (
     <div>
         <div className="flex flex-row">
-            <div className="left bg-blue-500 justify-between py-8 px-10 flex-1">
+            <div className="left bg-blue-500 h-screen justify-between py-8 px-10 flex-1">
           <div className="top flex flex-col gap-20">
             <div className="logo justify-center text-center items-center flex flex-row gap-2">
               <span>
@@ -29,28 +29,35 @@ const Books = () => {
         <div className="right w-full py-8 flex flex-col flex-8 bg-gray-50">
 
             <div className="topmost px-8 flex flex-row justify-between items-center">
-                <div className='flex flex-col text-gray-950 font-medium'><span className='text-xl'>Good morning, Admin👋</span><span className='text-base'>Here's what's happening on ReadHub</span></div>
-                <div className='flex flex-row gap-12 items-center text-xs bg-gray-200 px-4 py-3 rounded-lg border border-blue-400'><span className='text-gray-950'>Activity from last 7 days</span><span><img src={ReadHubImages.dropdownSvg} alt="" /></span></div>
+            <div>
+              <span className="text-gray-800 font-medium text-xl">Books</span>
             </div>
-
-            <div className='w-full'><span className='border border-blue-300 flex flex-row mt-7'></span></div>
-
-            <div className="top grid grid-cols-4 gap-8 py-10 px-7">
-                <div className="card flex flex-col gap-1 bg-gray-200 p-5 rounded-lg border border-blue-400">
-                    <span className='text-sm text-gray-950 font-normal'>Total Readers</span><span className='text-5xl text-gray-900 font-bold'>50</span><span className='text-sm text-gray-900 font-normal'>+11 this month</span>
-                </div>
-
-                <div className="card flex flex-col gap-1 bg-gray-200 p-5 rounded-lg border border-blue-400">
-                    <span className='text-sm text-gray-950 font-normal'>Total Reading Hours</span><span className='text-5xl text-gray-900 font-bold'>1250</span><span className='text-sm text-gray-900 font-normal'>+6 this month</span>
-                </div>
-
-                <div className="card flex flex-col gap-1 bg-gray-200 p-5 rounded-lg border border-blue-400">
-                    <span className='text-sm text-gray-950 font-normal'>Total book in library</span><span className='text-5xl text-gray-900 font-bold'>250</span><span className='text-sm text-gray-900 font-normal'>+4 this month</span>
-                </div>
-                <div className="card flex flex-col gap-1 bg-gray-200 p-5 rounded-lg border border-blue-400">
-                    <span className='text-sm text-gray-950 font-normal'>Books Completed</span><span className='text-5xl text-gray-900 font-bold'>50</span><span className='text-sm text-gray-900 font-normal'>+11 this month</span>
-                </div>
+            <div className="flex flex-row items-center gap-2 bg-gray-100 border border-blue-400 pr-20 pl-3 rounded-lg py-2">
+              <span className="w-3.5 h-3.5">
+                <img src={ReadHubImages.searchSvgIcon} alt="" />
+              </span>
+              <span className="text-xs text-gray-600">Search titles or readers</span>
             </div>
+          </div>
+
+            <div className='w-full'><span className='border border-gray-300 flex flex-row mt-7'></span></div>
+
+            <div className='py-8 px-6'><span className='text-gray-600 font-medium text-sm'>Manage the ReadHub library</span></div>
+
+            <div className="flex flex-row items-center gap-5 px-8">
+            <div className="flex flex-row gap-20 items-center border border-blue-400 bg-gray-200 rounded-lg px-3 py-2">
+              <span className="text-xs text-gray-600">All statuses</span>
+              <span className="w-2 h-2">
+                <img src={ReadHubImages.dropdownSvg} alt="" />
+              </span>
+            </div>
+            <div className="flex flex-row gap-20 items-center border border-blue-400 bg-gray-200 rounded-lg px-3 py-2">
+              <span className="text-xs text-gray-600">Join Date</span>
+              <span className="w-2 h-2">
+                <img src={ReadHubImages.dropdownSvg} alt="" />
+              </span>
+            </div>
+          </div>
 
         </div>
 
