@@ -1,16 +1,76 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ReadHubImages } from '../../assets/asset';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import axiosConfig from '../../Util/axiosConfig';
+import { apiEndpoints } from '../../Util/apiEndpoints';
 
 const Readers = () => {
+  const navigate = useNavigate();
+  const [readers, setReaders] = useState([]);
+  const [admin, setAdmin] = useState(null);
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('all');
+  const [sort, setSort] = useState('newest');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ total: 0, totalPages: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-    const readersData = [
-  { id: 1, name: 'Chukwuemeka Okino', email: 'aiii@gmail.com', books: 8, readingTime: '15h 22m', currentBook: 'Atomic habits', lastActive: '2m ago', status: 'Active' },
-  { id: 2, name: 'Chukwuemeka Okino', email: 'aiii@gmail.com', books: 8, readingTime: '15h 22m', currentBook: 'Atomic habits', lastActive: '2m ago', status: 'Active' },
-  { id: 3, name: 'Chukwuemeka Okino', email: 'aiii@gmail.com', books: 8, readingTime: '15h 22m', currentBook: 'Atomic habits', lastActive: '2m ago', status: 'Active' },
-  { id: 4, name: 'Chukwuemeka Okino', email: 'aiii@gmail.com', books: 8, readingTime: '15h 22m', currentBook: 'Atomic habits', lastActive: '2m ago', status: 'Active' },
-  { id: 5, name: 'Chukwuemeka Okino', email: 'aiii@gmail.com', books: 8, readingTime: '15h 22m', currentBook: 'Atomic habits', lastActive: '2m ago', status: 'Active' },
-];
+  useEffect(() => {
+    let mounted = true;
+
+    const loadReaders = async () => {
+      if (!localStorage.getItem('token')) {
+        navigate('/admin/login', { replace: true });
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const [readersResponse, adminResponse] = await Promise.all([
+          axiosConfig.get(apiEndpoints.ADMIN_READERS, {
+            params: { page, limit: 20, search, status, sort },
+          }),
+          page === 1 ? axiosConfig.get(apiEndpoints.ADMIN_ME) : Promise.resolve(null),
+        ]);
+
+        if (!mounted) return;
+        setReaders(readersResponse.data.data || []);
+        setPagination(readersResponse.data);
+        if (adminResponse) setAdmin(adminResponse.data.admin);
+        setError('');
+      } catch (requestError) {
+        if (!mounted) return;
+        if ([401, 403].includes(requestError.response?.status)) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('refreshToken');
+          navigate('/admin/login', { replace: true });
+          return;
+        }
+        setError(requestError.response?.data?.message || 'Unable to load readers.');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    loadReaders();
+    return () => { mounted = false; };
+  }, [navigate, page, search, sort, status]);
+
+  const handleLogout = async () => {
+    await axiosConfig.post(apiEndpoints.LOGOUT).catch(() => {});
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    navigate('/admin/login', { replace: true });
+  };
+
+  const formatReadingTime = (minutes = 0) => {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return `${hours}h ${remainingMinutes}m`;
+  };
+
+  const formatLastActive = (date) => date ? new Date(date).toLocaleString() : 'Never';
 
   return (
     <div>
@@ -53,16 +113,16 @@ const Readers = () => {
                 <img src={ReadHubImages.blankCircleSvgIcon} alt="" />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm text-gray-50 font-medium">Best Quality</span>
+                <span className="text-sm text-gray-50 font-medium">{admin?.username || 'Admin'}</span>
                 <span className="text-xs text-gray-50 font-light">Admin</span>
               </div>
             </div>
-            <div className="flex flex-row gap-10 items-center">
+            <button type="button" onClick={handleLogout} className="flex flex-row gap-10 items-center">
               <span className="w-3 h-3">
                 <img src={ReadHubImages.logoutSvgIcon} alt="" />
               </span>
               <span className="text-xs text-gray-50">Logout</span>
-            </div>
+            </button>
           </div>
         </div>
 
@@ -71,12 +131,12 @@ const Readers = () => {
             <div>
               <span className="text-gray-800 font-medium text-xl">Readers</span>
             </div>
-            <div className="flex flex-row items-center gap-2 bg-gray-100 border border-blue-400 pr-20 pl-3 rounded-lg py-2">
+            <label className="flex flex-row items-center gap-2 bg-gray-100 border border-blue-400 pr-20 pl-3 rounded-lg py-2">
               <span className="w-3.5 h-3.5">
                 <img src={ReadHubImages.searchSvgIcon} alt="" />
               </span>
-              <span className="text-xs text-gray-600">Search readers</span>
-            </div>
+              <input aria-label="Search readers" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} className="text-xs text-gray-600 bg-transparent outline-none" placeholder="Search readers" />
+            </label>
           </div>
 
           <div className="w-full">
@@ -84,18 +144,15 @@ const Readers = () => {
           </div>
 
           <div className="flex flex-row items-center gap-5 px-8 py-8">
-            <div className="flex flex-row gap-20 items-center border border-blue-400 bg-gray-200 rounded-lg px-3 py-2">
-              <span className="text-xs text-gray-600">All statuses</span>
-              <span className="w-2 h-2">
-                <img src={ReadHubImages.dropdownSvg} alt="" />
-              </span>
-            </div>
-            <div className="flex flex-row gap-20 items-center border border-blue-400 bg-gray-200 rounded-lg px-3 py-2">
-              <span className="text-xs text-gray-600">Join Date</span>
-              <span className="w-2 h-2">
-                <img src={ReadHubImages.dropdownSvg} alt="" />
-              </span>
-            </div>
+            <select aria-label="Filter reader status" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }} className="border border-blue-400 bg-gray-200 rounded-lg px-3 py-2 text-xs text-gray-600">
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            <select aria-label="Sort readers" value={sort} onChange={(event) => { setSort(event.target.value); setPage(1); }} className="border border-blue-400 bg-gray-200 rounded-lg px-3 py-2 text-xs text-gray-600">
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+            </select>
           </div>
 
           <div className="w-full max-w-7xl mx-auto bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden font-sans">
@@ -113,25 +170,25 @@ const Readers = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 text-sm">
-            {readersData.map((reader) => (
-              <tr key={reader.id} className="hover:bg-gray-50/50 transition-colors">
+            {readers.map((reader) => (
+              <tr key={reader._id} className="hover:bg-gray-50/50 transition-colors">
                 {/* Reader Column */}
                 <td className="py-4 px-6">
-                  <div className="font-medium text-gray-900">{reader.name}</div>
+                  <div className="font-medium text-gray-900">{reader.username}</div>
                   <div className="text-gray-400 text-xs mt-0.5">{reader.email}</div>
                 </td>
                 
                 {/* Books Column */}
-                <td className="py-4 px-6 text-gray-600">{reader.books}</td>
+                <td className="py-4 px-6 text-gray-600">{reader.booksCount}</td>
 
                 {/* Reading Time Column */}
-                <td className="py-4 px-6 text-gray-600">{reader.readingTime}</td>
+                <td className="py-4 px-6 text-gray-600">{formatReadingTime(reader.readingMinutes)}</td>
 
                 {/* Current Book Column */}
-                <td className="py-4 px-6 text-gray-600">{reader.currentBook}</td>
+                <td className="py-4 px-6 text-gray-600">{reader.currentBook || 'None'}</td>
 
                 {/* Last Active Column */}
-                <td className="py-4 px-6 text-gray-600">{reader.lastActive}</td>
+                <td className="py-4 px-6 text-gray-600">{formatLastActive(reader.lastActive)}</td>
 
                 {/* Status Column */}
                 <td className="py-4 px-6">
@@ -152,10 +209,14 @@ const Readers = () => {
                 </td>
               </tr>
             ))}
+            {!loading && readers.length === 0 && <tr><td colSpan="7" className="py-8 text-center text-gray-500">No readers found.</td></tr>}
           </tbody>
         </table>
       </div>
     </div>
+    {loading && <p className="p-6 text-center text-gray-600">Loading readers...</p>}
+    {error && <p className="p-6 text-center text-red-600">{error}</p>}
+    {!loading && pagination.totalPages > 1 && <div className="flex items-center justify-center gap-4 p-6"><button type="button" disabled={page === 1} onClick={() => setPage((current) => current - 1)} className="px-3 py-2 border rounded disabled:opacity-50">Previous</button><span>Page {page} of {pagination.totalPages}</span><button type="button" disabled={page === pagination.totalPages} onClick={() => setPage((current) => current + 1)} className="px-3 py-2 border rounded disabled:opacity-50">Next</button></div>}
 
         </div>
       </div>
