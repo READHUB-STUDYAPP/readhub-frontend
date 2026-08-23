@@ -11,7 +11,7 @@ const axiosConfig = axios.create({
 });
 
 // List of endpoints that do not require authorization header
-const excludeEndpoints = ["auth/login", "auth/register", "auth/refresh", "auth/logout", "auth/forget-password", "auth/password-token-verification", "auth/reset-password", "auth/google"];
+const excludeEndpoints = ["auth/login", "auth/register", "auth/refresh", "auth/logout", "auth/forget-password", "auth/password-token-verification", "auth/reset-password", "auth/google", "admin/login"];
 
 // Request interceptor
 axiosConfig.interceptors.request.use((config) => {
