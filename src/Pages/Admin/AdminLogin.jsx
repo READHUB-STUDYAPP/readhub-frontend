@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { validateEmail } from '../Auth/validate';
 import axiosConfig from '../../Util/axiosConfig';
-import { apiEndpoints } from '../../Util/apiEndpoints';
+import { apiEndpoints, baseURL } from '../../Util/apiEndpoints';
 import { LuEye, LuEyeOff, LuLoaderCircle } from 'react-icons/lu';
 
 const AdminLogin = () => {
@@ -37,6 +37,12 @@ const AdminLogin = () => {
       });
       const { accessToken, role } = response.data;
 
+      if (!accessToken) {
+        throw new Error("The server did not return an access token.");
+      }
+
+      localStorage.setItem("token", accessToken);
+
       if (role !== "admin") {
         localStorage.removeItem("token");
         setError("This account does not have admin access.");
@@ -44,14 +50,19 @@ const AdminLogin = () => {
         return;
       }
 
-      localStorage.setItem("token", accessToken);
+      // requireAdmin verifies the role from the database for protected routes.
+      await axiosConfig.get(apiEndpoints.ADMIN_ME);
       navigate("/admin/dashboard", { replace: true });
     } catch (err) {
+      if ([401, 403].includes(err.response?.status)) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
+      }
       setError(
         err.response?.data?.message ||
           (err.request
-            ? "Network error. Please try again later."
-            : "Authentication failed. Please check your credentials."),
+            ? `Unable to reach the API at ${baseURL}${apiEndpoints.LOGIN}. Check that the backend is running and VITE_API_BASE_URL is correct.`
+            : err.message || "Authentication failed. Please check your credentials."),
       );
     } finally {
       setLoading(false);
