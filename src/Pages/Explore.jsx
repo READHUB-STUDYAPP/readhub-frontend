@@ -278,7 +278,7 @@ const Explore = () => {
             <div className="card bg-white w-full p-4 rounded-xl flex justify-start items-start flex-row gap-4 border-gray-200 border">
               <div className="p-3 rounded-lg flex justify-center items-center bg-blue-100">
                 <span>
-                  <img src={ReadHubImages.blueCirclesIcon} alt="icon" />
+                  <img src={ReadHubImages.blueCircles} alt="icon" />
                 </span>
               </div>
               <div className="flex flex-col gap-0.5 justify-start items-start">
@@ -291,7 +291,7 @@ const Explore = () => {
             <div className="card bg-white w-full p-4 rounded-xl flex justify-start items-start flex-row gap-4 border-gray-200 border mb-20">
               <div className="p-3 rounded-lg flex justify-center items-center bg-blue-200">
                 <span>
-                  <img src={ReadHubImages.blueFlashIcon} alt="icon" />
+                  <img src={ReadHubImages.blueSparkIcon} alt="icon" />
                 </span>
               </div>
               <div className="flex flex-col gap-0.5 justify-start items-start">

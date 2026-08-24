@@ -1,7 +1,16 @@
-export const baseURL = `${import.meta.env.VITE_API_BASE_URL}/api/`;
+const apiOrigin = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+
+export const baseURL = `${apiOrigin.replace(/\/$/, "")}/api/`;
 
 export const apiEndpoints = {
     LOGIN: "auth/login",
+    ADMIN_ME: "admin/me",
+    ADMIN_OVERVIEW: "admin/overview",
+    ADMIN_READERS: "admin/readers",
+    ADMIN_BOOKS: "admin/books",
+    ADMIN_INVITES: "admin/invites",
+    ADMIN_INVITE: "admin/invite",
+    ADMIN_ACCEPT_INVITE: "admin/invite/accept",
     REGISTER: "auth/register",
     REFRESH_TOKEN: "auth/refresh",
     LOGOUT: "auth/logout",
