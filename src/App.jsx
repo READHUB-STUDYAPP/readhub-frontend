@@ -27,6 +27,10 @@ import Profile from "./Pages/Profile/Profile";
 import Settings from "./Pages/Profile/Settings";
 import Statistics from "./Pages/Profile/Statistics";
 import ViewEpub from "./Features/ViewEpub";
+import Dashboard from "./Pages/Admin/Dashboard";
+import Readers from "./Pages/Admin/Readers";
+import Books from "./Pages/Admin/Books";
+import AdminLogin from "./Pages/Admin/AdminLogin";
 
 function App() {
   const location = useLocation();
@@ -93,6 +97,10 @@ function App() {
         <Route path="/forgotpassword" element={<ForgotPassword />} />
         <Route path="/otp" element={<Otp />} />
         <Route path="/newpassword" element={<NewPassword />} />
+        <Route path="/admin/dashboard" element={<Dashboard/>}/>
+        <Route path="/admin/readers" element={<Readers/>}/>
+        <Route path="/admin/books" element={<Books/>}/>
+        <Route path="/admin/login" element={<AdminLogin/>}/>
       </Routes>
 
       {showNav && <Nav />}
