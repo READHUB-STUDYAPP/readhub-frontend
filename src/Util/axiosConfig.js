@@ -38,7 +38,7 @@ axiosConfig.interceptors.response.use((response) => {
         const originalRequest = error.config;
 
         // Check if the error is 401 and not a retry request
-        if (error.response.status === 401 && !originalRequest._retry) {
+        if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
 
             try {
@@ -76,7 +76,9 @@ const handleLogout = () => {
 
     localStorage.removeItem("token");
     localStorage.removeItem("refreshToken");
-    window.location.href = '/login'; 
+    window.location.href = window.location.pathname.startsWith('/admin')
+        ? '/admin/login'
+        : '/login';
 };
 
 export default axiosConfig;
