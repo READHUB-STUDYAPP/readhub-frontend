@@ -248,12 +248,14 @@ const Library = () => {
         totalPages = Math.max(1, locations.length || 1);
       } catch {}
       book.destroy();
+
       await uploadBook(file, {
         title: metadata.title || file.name.replace(/\.epub$/i, ''),
         author: metadata.creator || 'Unknown',
         totalPages,
         coverImage,
       }, (pct) => setUploadProgress(Math.max(0, Math.min(100, Number(pct) || 0))));
+
       setUploadProgress(100);
       await fetchBooks();
       setIsUploading(false);

@@ -54,9 +54,7 @@ const Readers = () => {
     };
 
     loadReaders();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [navigate, page, search, sort, status]);
 
   const handleLogout = async () => {
@@ -72,7 +70,7 @@ const Readers = () => {
     return `${hours}h ${remainingMinutes}m`;
   };
 
-  const formatLastActive = (date) => (date ? new Date(date).toLocaleString() : 'Never');
+  const formatLastActive = (date) => date ? new Date(date).toLocaleString() : 'Never';
 
   return (
     <div>
@@ -89,25 +87,19 @@ const Readers = () => {
                 <span>
                   <img src={ReadHubImages.dashboardIcon} alt="" />
                 </span>
-                <span>
-                  <Link to="/admin/dashboard">Dashboard</Link>
-                </span>
+                <span><Link to="/admin/dashboard">Dashboard</Link></span>
               </div>
               <div className="flex flex-row gap-2 items-center bg-blue-700 px-4 py-2.5 rounded-lg">
                 <span>
                   <img src={ReadHubImages.peopleIcon} alt="" />
                 </span>
-                <span>
-                  <Link to="/admin/readers">Readers</Link>
-                </span>
+                <span><Link to="/admin/readers">Readers</Link></span>
               </div>
               <div className="flex flex-row gap-2 items-center">
                 <span>
                   <img src={ReadHubImages.booksIconSvg} alt="" />
                 </span>
-                <span>
-                  <Link to="/admin/books">Books</Link>
-                </span>
+                <span><Link to="/admin/books">Books</Link></span>
               </div>
             </div>
           </div>
@@ -121,17 +113,11 @@ const Readers = () => {
                 <img src={ReadHubImages.blankCircleSvgIcon} alt="" />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm text-gray-50 font-medium">
-                  {admin?.username || 'Admin'}
-                </span>
+                <span className="text-sm text-gray-50 font-medium">{admin?.username || 'Admin'}</span>
                 <span className="text-xs text-gray-50 font-light">Admin</span>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="flex flex-row gap-10 items-center"
-            >
+            <button type="button" onClick={handleLogout} className="flex flex-row gap-10 items-center">
               <span className="w-3 h-3">
                 <img src={ReadHubImages.logoutSvgIcon} alt="" />
               </span>
@@ -149,16 +135,7 @@ const Readers = () => {
               <span className="w-3.5 h-3.5">
                 <img src={ReadHubImages.searchSvgIcon} alt="" />
               </span>
-              <input
-                aria-label="Search readers"
-                value={search}
-                onChange={(event) => {
-                  setSearch(event.target.value);
-                  setPage(1);
-                }}
-                className="text-xs text-gray-600 bg-transparent outline-none"
-                placeholder="Search readers"
-              />
+              <input aria-label="Search readers" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} className="text-xs text-gray-600 bg-transparent outline-none" placeholder="Search readers" />
             </label>
           </div>
 
@@ -167,127 +144,80 @@ const Readers = () => {
           </div>
 
           <div className="flex flex-row items-center gap-5 px-8 py-8">
-            <select
-              aria-label="Filter reader status"
-              value={status}
-              onChange={(event) => {
-                setStatus(event.target.value);
-                setPage(1);
-              }}
-              className="border border-blue-400 bg-gray-200 rounded-lg px-3 py-2 text-xs text-gray-600"
-            >
+            <select aria-label="Filter reader status" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }} className="border border-blue-400 bg-gray-200 rounded-lg px-3 py-2 text-xs text-gray-600">
               <option value="all">All statuses</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
-            <select
-              aria-label="Sort readers"
-              value={sort}
-              onChange={(event) => {
-                setSort(event.target.value);
-                setPage(1);
-              }}
-              className="border border-blue-400 bg-gray-200 rounded-lg px-3 py-2 text-xs text-gray-600"
-            >
+            <select aria-label="Sort readers" value={sort} onChange={(event) => { setSort(event.target.value); setPage(1); }} className="border border-blue-400 bg-gray-200 rounded-lg px-3 py-2 text-xs text-gray-600">
               <option value="newest">Newest</option>
               <option value="oldest">Oldest</option>
             </select>
           </div>
 
           <div className="w-full max-w-7xl mx-auto bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden font-sans">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-100 text-gray-500 text-sm font-medium">
-                    <th className="py-4 px-6">Reader</th>
-                    <th className="py-4 px-6">Books</th>
-                    <th className="py-4 px-6">Reading time</th>
-                    <th className="py-4 px-6">Current book</th>
-                    <th className="py-4 px-6">Last active</th>
-                    <th className="py-4 px-6">Status</th>
-                    <th className="py-4 px-6"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 text-sm">
-                  {readers.map((reader) => (
-                    <tr key={reader._id} className="hover:bg-gray-50/50 transition-colors">
-                      {/* Reader Column */}
-                      <td className="py-4 px-6">
-                        <div className="font-medium text-gray-900">{reader.username}</div>
-                        <div className="text-gray-400 text-xs mt-0.5">{reader.email}</div>
-                      </td>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b border-gray-100 text-gray-500 text-sm font-medium">
+              <th className="py-4 px-6">Reader</th>
+              <th className="py-4 px-6">Books</th>
+              <th className="py-4 px-6">Reading time</th>
+              <th className="py-4 px-6">Current book</th>
+              <th className="py-4 px-6">Last active</th>
+              <th className="py-4 px-6">Status</th>
+              <th className="py-4 px-6"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 text-sm">
+            {readers.map((reader) => (
+              <tr key={reader._id} className="hover:bg-gray-50/50 transition-colors">
+                {/* Reader Column */}
+                <td className="py-4 px-6">
+                  <div className="font-medium text-gray-900">{reader.username}</div>
+                  <div className="text-gray-400 text-xs mt-0.5">{reader.email}</div>
+                </td>
+                
+                {/* Books Column */}
+                <td className="py-4 px-6 text-gray-600">{reader.booksCount}</td>
 
-                      {/* Books Column */}
-                      <td className="py-4 px-6 text-gray-600">{reader.booksCount}</td>
+                {/* Reading Time Column */}
+                <td className="py-4 px-6 text-gray-600">{formatReadingTime(reader.readingMinutes)}</td>
 
-                      {/* Reading Time Column */}
-                      <td className="py-4 px-6 text-gray-600">
-                        {formatReadingTime(reader.readingMinutes)}
-                      </td>
+                {/* Current Book Column */}
+                <td className="py-4 px-6 text-gray-600">{reader.currentBook || 'None'}</td>
 
-                      {/* Current Book Column */}
-                      <td className="py-4 px-6 text-gray-600">{reader.currentBook || 'None'}</td>
+                {/* Last Active Column */}
+                <td className="py-4 px-6 text-gray-600">{formatLastActive(reader.lastActive)}</td>
 
-                      {/* Last Active Column */}
-                      <td className="py-4 px-6 text-gray-600">
-                        {formatLastActive(reader.lastActive)}
-                      </td>
+                {/* Status Column */}
+                <td className="py-4 px-6">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-500 text-white">
+                    {reader.status}
+                  </span>
+                </td>
 
-                      {/* Status Column */}
-                      <td className="py-4 px-6">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-500 text-white">
-                          {reader.status}
-                        </span>
-                      </td>
+                {/* Actions Column */}
+                <td className="py-4 px-6 text-right">
+                  <button className="text-gray-400 hover:text-gray-600 focus:outline-none">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                      <circle cx="5" cy="12" r="2" />
+                      <circle cx="12" cy="12" r="2" />
+                      <circle cx="19" cy="12" r="2" />
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {!loading && readers.length === 0 && <tr><td colSpan="7" className="py-8 text-center text-gray-500">No readers found.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {loading && <p className="p-6 text-center text-gray-600">Loading readers...</p>}
+    {error && <p className="p-6 text-center text-red-600">{error}</p>}
+    {!loading && pagination.totalPages > 1 && <div className="flex items-center justify-center gap-4 p-6"><button type="button" disabled={page === 1} onClick={() => setPage((current) => current - 1)} className="px-3 py-2 border rounded disabled:opacity-50">Previous</button><span>Page {page} of {pagination.totalPages}</span><button type="button" disabled={page === pagination.totalPages} onClick={() => setPage((current) => current + 1)} className="px-3 py-2 border rounded disabled:opacity-50">Next</button></div>}
 
-                      {/* Actions Column */}
-                      <td className="py-4 px-6 text-right">
-                        <button className="text-gray-400 hover:text-gray-600 focus:outline-none">
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                            <circle cx="5" cy="12" r="2" />
-                            <circle cx="12" cy="12" r="2" />
-                            <circle cx="19" cy="12" r="2" />
-                          </svg>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {!loading && readers.length === 0 && (
-                    <tr>
-                      <td colSpan="7" className="py-8 text-center text-gray-500">
-                        No readers found.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-          {loading && <p className="p-6 text-center text-gray-600">Loading readers...</p>}
-          {error && <p className="p-6 text-center text-red-600">{error}</p>}
-          {!loading && pagination.totalPages > 1 && (
-            <div className="flex items-center justify-center gap-4 p-6">
-              <button
-                type="button"
-                disabled={page === 1}
-                onClick={() => setPage((current) => current - 1)}
-                className="px-3 py-2 border rounded disabled:opacity-50"
-              >
-                Previous
-              </button>
-              <span>
-                Page {page} of {pagination.totalPages}
-              </span>
-              <button
-                type="button"
-                disabled={page === pagination.totalPages}
-                onClick={() => setPage((current) => current + 1)}
-                className="px-3 py-2 border rounded disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </div>
