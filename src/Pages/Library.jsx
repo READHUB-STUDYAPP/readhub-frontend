@@ -274,7 +274,7 @@ const Library = () => {
 
   const openEpub = (file) => {
     selectFile(file);
-    navigate(`/viewepub/${file.id}`);
+    navigate(`/viewepub/${file._id}`);
   };
 
   const filters = ['All books', 'Reading', 'Completed'];

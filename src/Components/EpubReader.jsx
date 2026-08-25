@@ -53,7 +53,8 @@ const EpubReader = forwardRef(
     }, [theme]);
 
     useEffect(() => {
-      if (!file?.fileData || !viewerRef.current) return;
+      const source = file?.fileData || file?.fileUrl;
+      if (!source || !viewerRef.current) return;
 
       let mounted = true;
 
@@ -63,19 +64,7 @@ const EpubReader = forwardRef(
 
           console.log("Starting EPUB load...");
 
-          // Convert base64 to blob
-          const base64String = file.fileData.split(",")[1];
-          const binaryString = atob(base64String);
-          const bytes = new Uint8Array(binaryString.length);
-
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-
-          const bookData = new Blob([bytes], { type: "application/epub+zip" });
-
-          //Book Instance
-          const book = Epub(bookData);
+          const book = Epub(source);
           bookRef.current = book;
 
           console.log(book);
