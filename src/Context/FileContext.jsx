@@ -226,8 +226,6 @@ export function FileProvider({ children }) {
       //Extract cover
 
       const fileURL = URL.createObjectURL(file);
-      const fileType = file.name.endsWith(".epub") ? "epub" : "pdf";
-
       const coverImage = metadata.coverImage || null;
       //Upload book file to Cloudinary
 

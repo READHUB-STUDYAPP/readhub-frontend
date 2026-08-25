@@ -235,7 +235,6 @@ const Library = () => {
         reader.onerror = () => reject(reader.error || new Error('Unable to read EPUB'));
         reader.readAsDataURL(file);
       });
-
       const coverImage = await extractEpubCover(fileDataUrl);
       const book = Epub(file);
       await book.ready;
