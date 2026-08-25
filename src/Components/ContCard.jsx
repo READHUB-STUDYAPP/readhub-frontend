@@ -14,6 +14,9 @@ const ContCard = ({
   coverImage,
   onDelete,
   showDelete = false,
+  category,
+  categories = [],
+  onCategoryChange,
 }) => {
   const validProgress = Math.min(100, Math.max(0, progress));
 
@@ -30,6 +33,18 @@ const ContCard = ({
           />
         </div>
         <div className="w-[210px] max-xsm:w-[185px] flex flex-col justify-evenly relative">
+          {onCategoryChange && (
+            <label className="absolute right-8 top-3.5 text-[#4B6481]" title="Set book category">
+              <span className="sr-only">Set book category</span>
+              <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                <path d="M3 6.5A2.5 2.5 0 0 1 5.5 4H10l2 2h6.5A2.5 2.5 0 0 1 21 8.5v9A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5v-11Z" />
+              </svg>
+              <select aria-label={`Set category for ${fileName}`} value={category || ""} onChange={(event) => onCategoryChange(event.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                <option value="">Uncategorized</option>
+                {categories.map((option) => <option key={option} value={option}>{option}</option>)}
+              </select>
+            </label>
+          )}
          {showDelete && (
   <div
     onClick={onDelete}
