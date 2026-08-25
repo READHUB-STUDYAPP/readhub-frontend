@@ -25,6 +25,7 @@ const Library = () => {
     currentPage,
     updateCurrentPage,
     deleteBook,
+    setBookCategory,
     loading,
   } = useFiles();
   const navigate = useNavigate();
@@ -33,6 +34,8 @@ const Library = () => {
   const [fileName, setFileName] = useState('');
 
   const [activeFilter, setActiveFilter] = useState('All books');
+  const categories = ['Fiction', 'Educational & Academic Non-Fiction', 'Self-Help & Personal Growth', 'Biography/True Stories', 'LifeStyle'];
+  const [categoryFilter, setCategoryFilter] = useState('All categories');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showCompressionInfo, setShowCompressionInfo] = useState(false);
@@ -301,6 +304,10 @@ const Library = () => {
       );
     }
 
+    if (categoryFilter !== 'All categories') {
+      filtered = filtered.filter((book) => book.category === categoryFilter);
+    }
+
     return filtered;
   }
 
@@ -428,6 +435,13 @@ const Library = () => {
         </div>
       </div>
 
+      <div className="flex gap-2 overflow-x-auto mb-6" aria-label="Filter books by category">
+        <button type="button" onClick={() => setCategoryFilter('All categories')} className={`shrink-0 px-4 py-2 rounded-full bg-white ${categoryFilter === 'All categories' ? 'text-black' : 'text-[#4B6481]'}`}>All categories</button>
+        {categories.map((category) => (
+          <button type="button" key={category} onClick={() => setCategoryFilter(category)} className={`shrink-0 px-4 py-2 rounded-full bg-white text-left ${categoryFilter === category ? 'text-black' : 'text-[#4B6481]'}`}>{category}</button>
+        ))}
+      </div>
+
       <div>
         {!isFetchingBooks && files.length > 0 ? (
           <div>
@@ -458,6 +472,9 @@ const Library = () => {
                   continueRead={page < 1 ? 'Start Reading' : 'Continue Reading'}
                   file={book}
                   coverImage={book.coverImageUrl}
+                  category={book.category}
+                  categories={categories}
+                  onCategoryChange={(category) => setBookCategory(book._id, category)}
                   onDelete={() => handleDelete(book._id)}
                   showDelete={true}
                 />
