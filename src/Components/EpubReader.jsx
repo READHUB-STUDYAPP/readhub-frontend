@@ -16,6 +16,14 @@ const EpubReader = forwardRef(
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const withTimeout = (promise, message, timeout = 30000) =>
+      Promise.race([
+        promise,
+        new Promise((_, reject) => {
+          setTimeout(() => reject(new Error(message)), timeout);
+        }),
+      ]);
+
     //Expose methods to parent
     useImperativeHandle(ref, () => ({
       next() {
@@ -56,6 +64,8 @@ const EpubReader = forwardRef(
       if (!source || !viewerRef.current) return;
 
       let mounted = true;
+      setError(null);
+      viewerRef.current.replaceChildren();
 
       const loadBook = async () => {
         try {
@@ -65,11 +75,21 @@ const EpubReader = forwardRef(
 
           let bookSource = source;
           if (typeof source === "string" && /^https?:\/\//i.test(source)) {
-            const response = await fetch(source, { credentials: "omit" });
+            const controller = new AbortController();
+            const response = await withTimeout(
+              fetch(source, { credentials: "omit", signal: controller.signal }),
+              "The EPUB download timed out. Check the file URL and storage service.",
+            ).catch((downloadError) => {
+              controller.abort();
+              throw downloadError;
+            });
             if (!response.ok) {
               throw new Error(`Unable to download EPUB (${response.status})`);
             }
-            bookSource = await response.arrayBuffer();
+            bookSource = await withTimeout(
+              response.arrayBuffer(),
+              "The EPUB file could not be read.",
+            );
           }
 
           const book = Epub(bookSource);
@@ -78,7 +98,10 @@ const EpubReader = forwardRef(
           console.log(book);
 
           //book load
-          await book.ready;
+          await withTimeout(
+            book.ready,
+            "The EPUB could not be parsed. The uploaded file may be invalid.",
+          );
           const rendition = book.renderTo(viewerRef.current, {
             width: "100%",
             height: "100%",
@@ -100,7 +123,10 @@ const EpubReader = forwardRef(
             onLocationChange?.({ current: current + 1, total });
           });
 
-          await rendition.display();
+          await withTimeout(
+            rendition.display(),
+            "The first EPUB page could not be rendered.",
+          );
 
           if (mounted) setIsLoading(false);
 
@@ -162,7 +188,7 @@ const EpubReader = forwardRef(
         } catch (err) {
           console.error("Error loading EPUB :", err);
           if (mounted) {
-            setError("Failed to load EPUB file");
+            setError(err.message || "Failed to load EPUB file");
             setIsLoading(false);
           }
         }
