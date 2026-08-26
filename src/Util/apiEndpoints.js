@@ -28,4 +28,5 @@ export const apiEndpoints = {
     BOOK_END_READING: "book/end",
     BOOK_GOAL: "book/goal",
     BOOK_CONTENT: "book/:bookId/content",
+    
 };
