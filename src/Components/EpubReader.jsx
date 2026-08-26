@@ -6,7 +6,6 @@ import React, {
   useState,
   forwardRef,
 } from "react";
-import { useSwipeable } from "react-swipeable";
 
 const EpubReader = forwardRef(
   ({ file, fontSize, theme, onLocationChange }, ref) => {
@@ -64,15 +63,22 @@ const EpubReader = forwardRef(
 
           console.log("Starting EPUB load...");
 
-          const book = Epub(source);
+          let bookSource = source;
+          if (typeof source === "string" && /^https?:\/\//i.test(source)) {
+            const response = await fetch(source, { credentials: "omit" });
+            if (!response.ok) {
+              throw new Error(`Unable to download EPUB (${response.status})`);
+            }
+            bookSource = await response.arrayBuffer();
+          }
+
+          const book = Epub(bookSource);
           bookRef.current = book;
 
           console.log(book);
 
           //book load
           await book.ready;
-          await book.locations.generate(1024);
-
           const rendition = book.renderTo(viewerRef.current, {
             width: "100%",
             height: "100%",
@@ -95,6 +101,14 @@ const EpubReader = forwardRef(
           });
 
           await rendition.display();
+
+          if (mounted) setIsLoading(false);
+
+          // Location generation is only needed for page navigation and can be
+          // expensive for large EPUBs. Do not block the initial render on it.
+          book.locations.generate(1024).catch((locationError) => {
+            console.warn("Unable to generate EPUB locations", locationError);
+          });
 
           rendition?.hooks.content.register((contents) => {
             const doc = contents.document;
@@ -145,7 +159,6 @@ const EpubReader = forwardRef(
             }
           });
 
-          if (mounted) setIsLoading(false);
         } catch (err) {
           console.error("Error loading EPUB :", err);
           if (mounted) {
