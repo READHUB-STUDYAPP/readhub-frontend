@@ -6,6 +6,7 @@ import React, {
   useState,
   forwardRef,
 } from "react";
+import { baseURL, apiEndpoints } from "../Util/apiEndpoints";
 
 const EpubReader = forwardRef(
   ({ file, fontSize, theme, onLocationChange }, ref) => {
@@ -74,7 +75,20 @@ const EpubReader = forwardRef(
           console.log("Starting EPUB load...");
 
           let bookSource = source;
-          if (typeof source === "string" && /^https?:\/\//i.test(source)) {
+          if (file?._id) {
+            const token = localStorage.getItem("token");
+            const contentUrl = `${baseURL}${apiEndpoints.BOOK_CONTENT.replace(":bookId", file._id)}`;
+            const controller = new AbortController();
+            const response = await withTimeout(
+              fetch(contentUrl, { headers: token ? { Authorization: `Bearer ${token}` } : {}, signal: controller.signal }),
+              "The EPUB download timed out. Check the API and storage service.",
+            ).catch((downloadError) => {
+              controller.abort();
+              throw downloadError;
+            });
+            if (!response.ok) throw new Error(`Unable to download EPUB (${response.status})`);
+            bookSource = await withTimeout(response.arrayBuffer(), "The EPUB file could not be read.");
+          } else if (typeof source === "string" && /^https?:\/\//i.test(source)) {
             const controller = new AbortController();
             const response = await withTimeout(
               fetch(source, { credentials: "omit", signal: controller.signal }),
