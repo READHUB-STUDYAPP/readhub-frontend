@@ -11,7 +11,7 @@ const axiosConfig = axios.create({
 });
 
 // List of endpoints that do not require authorization header
-const excludeEndpoints = ["auth/login", "auth/register", "auth/refresh", "auth/logout", "auth/forget-password", "auth/password-token-verification", "auth/reset-password", "auth/google", "admin/login"];
+const excludeEndpoints = ["auth/login", "auth/register", "auth/refresh", "auth/logout", "auth/forget-password", "auth/password-token-verification", "auth/reset-password", "auth/google", "admin/login", "admin/invite/accept"];
 
 // Request interceptor
 axiosConfig.interceptors.request.use((config) => {
@@ -37,19 +37,19 @@ axiosConfig.interceptors.response.use((response) => {
     async (error) => {
         const originalRequest = error.config;
 
+        // Logout and refresh failures are terminal; retrying either request
+        // through this interceptor can recursively trigger another logout.
+        if (!originalRequest || originalRequest.url?.includes(apiEndpoints.LOGOUT) || originalRequest.url?.includes(apiEndpoints.REFRESH_TOKEN)) {
+            return Promise.reject(error);
+        }
+
         // Check if the error is 401 and not a retry request
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
 
             try {
-                const refreshToken = localStorage.getItem("refreshToken");
-                if (!refreshToken) {
-                    // If no refresh token, logout
-                    handleLogout();
-                    return Promise.reject(error);
-                }
-
-                const response = await axios.post(`${baseURL}${apiEndpoints.REFRESH_TOKEN}`, { refreshToken });
+                // The backend reads the refresh token from the HttpOnly cookie.
+                const response = await axios.post(`${baseURL}${apiEndpoints.REFRESH_TOKEN}`, {}, { withCredentials: true });
 
                 const { accessToken: newAccessToken } = response.data;
                 localStorage.setItem("token", newAccessToken);
