@@ -29,4 +29,6 @@ export const apiEndpoints = {
     BOOK_START_READING: "book/start",
     BOOK_END_READING: "book/end",
     BOOK_GOAL: "book/goal",
+    BOOK_CONTENT: "book/:bookId/content",
+    
 };

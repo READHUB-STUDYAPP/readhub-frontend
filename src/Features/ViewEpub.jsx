@@ -9,6 +9,7 @@ const ViewEpub = () => {
   const { fileId } = useParams();
   const { selectedFile2, files, fetchBooks, setSelectedFile } = useFiles();
   const [book, setBook] = useState(selectedFile2);
+  const [bookError, setBookError] = useState(null);
   const readerRef = useRef(null);
 
   const [page, setPage] = useState(1);
@@ -36,14 +37,26 @@ const ViewEpub = () => {
         if (loadedBook) {
           setBook(loadedBook);
           setSelectedFile(loadedBook);
+        } else {
+          setBookError("The selected EPUB book could not be found.");
         }
       } catch (error) {
         console.error("Unable to load EPUB book", error);
+        setBookError("Unable to load the selected EPUB book.");
       }
     };
 
     loadBook();
   }, [book, fetchBooks, fileId, files, setSelectedFile]);
+
+  if (bookError) {
+    return (
+      <div className="w-full h-dvh flex flex-col items-center justify-center gap-4">
+        <p className="text-red-500">{bookError}</p>
+        <Link to="/library" className="text-primary">Back to library</Link>
+      </div>
+    );
+  }
 
   const increaseFont = () => {
     setScaleFont((prev) => Math.min(prev + 2, 30));
