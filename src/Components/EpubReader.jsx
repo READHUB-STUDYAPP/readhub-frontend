@@ -62,11 +62,17 @@ const EpubReader = forwardRef(
 
     useEffect(() => {
       const source = file?.fileData || file?.fileUrl;
-      if (!source || !viewerRef.current) return;
+      if (!viewerRef.current) return;
 
       let mounted = true;
       setError(null);
       viewerRef.current.replaceChildren();
+
+      if (!source) {
+        setIsLoading(false);
+        setError("The EPUB book could not be found.");
+        return;
+      }
 
       const loadBook = async () => {
         try {
@@ -106,7 +112,10 @@ const EpubReader = forwardRef(
             );
           }
 
-          const book = Epub(bookSource);
+          const bookData = bookSource instanceof ArrayBuffer
+            ? new Blob([bookSource], { type: "application/epub+zip" })
+            : bookSource;
+          const book = Epub(bookData, { openAs: "epub" });
           bookRef.current = book;
 
           console.log(book);
