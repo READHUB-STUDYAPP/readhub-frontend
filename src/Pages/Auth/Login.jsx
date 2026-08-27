@@ -39,11 +39,11 @@ const Login = () => {
         password,
       });
 
-      const { accessToken, refreshToken } = response.data;
+      const { accessToken } = response.data;
 
-      // Store tokens in localStorage
+      // The access token is local; the refresh token is an HttpOnly cookie.
       localStorage.setItem("token", accessToken);
-      localStorage.setItem("refreshToken", refreshToken);
+      localStorage.removeItem("refreshToken");
 
       setLoading(false);
       navigate("/home");
@@ -71,7 +71,6 @@ const Login = () => {
       });
       if (response.status === 200) {
         toast.success("Logged in successfully.");
-        localStorage.setItem("refreshToken", response.data.refreshToken);
         localStorage.setItem("token", response.data.accessToken);
         navigate("/home");
       }

@@ -31,6 +31,7 @@ import Dashboard from "./Pages/Admin/Dashboard";
 import Readers from "./Pages/Admin/Readers";
 import Books from "./Pages/Admin/Books";
 import AdminLogin from "./Pages/Admin/AdminLogin";
+import AdminAcceptInvite from "./Pages/Admin/AdminAcceptInvite";
 
 function App() {
   const location = useLocation();
@@ -101,6 +102,7 @@ function App() {
         <Route path="/admin/readers" element={<Readers/>}/>
         <Route path="/admin/books" element={<Books/>}/>
         <Route path="/admin/login" element={<AdminLogin/>}/>
+        <Route path="/admin/accept-invite" element={<AdminAcceptInvite/>}/>
       </Routes>
 
       {showNav && <Nav />}
