@@ -231,7 +231,7 @@ const Explore = () => {
 
         <div className="flex flex-col justify-center gap-3.5 mt-12 w-full">
           <div className="flex flex-row justify-between items-center px-2">
-            <span className="text-xl font-medium">Trending Books</span>
+            <span className="text-xl font-medium">Search for your favorite books</span>
             <button
               type="button"
               onClick={() => setIsSearchModalOpen(true)}
@@ -241,17 +241,7 @@ const Explore = () => {
               <LuSearch />
             </button>
           </div>
-          <div className="cards grid grid-cols-3 justify-center gap-8 items-center w-full">
-            <div>
-              <img src={ReadHubImages.trendingbook1} alt="books" />
-            </div>
-            <div>
-              <img src={ReadHubImages.trendingbook2} alt="books" />
-            </div>
-            <div>
-              <img src={ReadHubImages.trendingbook3} alt="books" />
-            </div>
-          </div>
+          
         </div>
 
         <div className="flex flex-col gap-2.5 justify-start items-start mt-9.5 lg:mt-14">
