@@ -7,22 +7,14 @@ const OnboardingFourth = () => {
     const navigate = useNavigate();
 
   return (
-    <div className='min-h-screen bg-white'>
-            
-            <div className="bg-white px-4 py-6 flex flex-col gap-5 justify-center items-center pt-20 w-full">
-                <div className=""><img src={ReadHubImages.FourthOnboardingImage} alt="ReadHub" /></div>
-                <div className="mt-3 flex flex-col gap-2.5 items-center justify-center">
-                    <span className="text-2xl text-blue-500 font-bold">Turn reading into growth</span>
-                    <span className="text-gray-600 text-md font-medium text-center">Build a personal knowledge library that grows <br /> with you</span>
-                </div>
-                <div className="button  w-full flex items-center justify-center mt-10"
-                onClick={()=> navigate('/signup')}
-                >
-                    <span className='items-center bg-blue-400 text-white p-3 rounded-lg'>Next</span>
-                </div>
-            </div>
-
+    <div>
+        <div className='py-10 px-3 flex flex-col justify-center items-center gap-15'>
+            <div className='flex flex-col items-end gap-3' onClick={()=> navigate('/signup')}><span><img src={ReadHubImages.loading3} alt="" /></span><span className='text-sm'>Skip</span></div>
+            <div className='mt-30'><img src={ReadHubImages.onboardImg3} alt="" /></div>
+            <div className='mt-20 flex flex-col items-center text-center gap-2'><span className="text-blue-500 text-2xl font-semibold">Read more. Stay consistent</span><span className='text-base font-normal text-gray-950'>Set reading goals and keep yourself motivated<br />one page at a time</span></div>
+            <div className='mt-5' onClick={()=> navigate('/signup')}><span className='bg-blue-600 py-3.5 px-25 rounded-4xl text-gray-50'>Start Reading</span></div>
         </div>
+    </div>
   )
 }
 

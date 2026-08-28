@@ -7,30 +7,12 @@ const OnboardingSecond = () => {
     const navigate = useNavigate();
 
   return (
-    <div className='min-h-screen bg-white'>
-
-        <div className=" bg-white px-4 py-6">
-
-            <div className="justify-end items-end relative"  onClick={()=> navigate('/onboarding3')}>
-                <span className='text-md font-normal absolute right-[10%] top-1/2'>Skip</span>
-            </div>
-
-
-        <div className=" flex flex-col gap-5 justify-center items-center mt-10 w-full">
-
-            <div className=""><img src={ReadHubImages.SecondOnboardingImage} alt="ReadHub" /></div>
-
-            <div className="flex flex-col gap-2.5 items-center justify-center mt-3">
-                <span className="text-2xl text-blue-500 font-bold">Read with intention</span>
-                <span className="text-gray-600 text-md font-medium text-center">Don't just read more. Read what truly matters <br /> to you</span>
-            </div>
-
-            <div className="button w-full flex items-center justify-center mt-10"onClick={()=> navigate('/onboarding3')}>
-                <span className='items-center bg-blue-400 text-white p-3 rounded-lg'>Next</span>
-            </div>
-
-        </div>
-
+    <div>
+        <div className='py-10 px-3 flex flex-col justify-center items-center gap-15'>
+            <div className='flex flex-col items-end gap-3' onClick={()=> navigate('/onboarding3')}><span><img src={ReadHubImages.loading1} alt="" /></span><span className='text-sm'>Skip</span></div>
+            <div className='mt-45'><img src={ReadHubImages.onboardImg1} alt="" /></div>
+            <div className='mt-20 flex flex-col items-center text-center gap-2'><span className="text-blue-500 text-2xl font-semibold">Find your next great read</span><span className='text-base font-normal text-gray-950'>Explore books you actually want to read and <br /> build your personal reading list</span></div>
+            <div className='mt-5' onClick={()=> navigate('/onboarding3')}><span className='bg-blue-600 py-3.5 px-25 rounded-4xl text-gray-50'>Next</span></div>
         </div>
     </div>
   )
