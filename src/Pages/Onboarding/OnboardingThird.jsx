@@ -7,25 +7,14 @@ const OnboardingThird = () => {
     const navigate = useNavigate();
 
   return (
-    <div className='min-h-screen bg-white w-full'>
-            <div className=" bg-white px-4 py-6">
-                <div className="justify-end relative items-end" onClick={()=> navigate('/onboarding4')}>
-                    <span className='text-md font-normal absolute right-[10%] top-1/2'>Skip</span>
-                </div>
-            <div className="flex flex-col gap-5 justify-center items-center mt-10 w-full">
-                <div className=""><img src={ReadHubImages.ThirdOnboardingImage} alt="ReadHub" /></div>
-                <div className="flex flex-col gap-2.5 items-center justify-center mt-3">
-                    <span className="text-2xl text-blue-500 font-bold">Capture what matters</span>
-                    <span className="text-gray-600 text-md font-medium text-center">Save highlights, ideas, and thoughts you don't <br /> want to forget</span>
-                </div>
-                <div className="button  w-full flex items-center justify-center mt-10"
-                onClick={()=> navigate('/onboarding4')}
-                >
-                    <span className='items-center bg-blue-400 text-white p-3 rounded-lg'>Next</span>
-                </div>
-            </div>
-            </div>
+    <div>
+        <div className='py-10 px-3 flex flex-col justify-center items-center gap-15'>
+            <div className='flex flex-col items-end gap-3' onClick={()=> navigate('/onboarding4')}><span><img src={ReadHubImages.loading2} alt="" /></span><span className='text-sm'>Skip</span></div>
+            <div className='mt-30'><img src={ReadHubImages.onboardImg2} alt="" /></div>
+            <div className='mt-20 flex flex-col items-center text-center gap-2'><span className="text-blue-500 text-2xl font-semibold">Read at your pace</span><span className='text-base font-normal text-gray-950'>Pick up where you left off and keep track of your <br /> progress as you read</span></div>
+            <div className='mt-5' onClick={()=> navigate('/onboarding4')}><span className='bg-blue-600 py-3 px-25 rounded-4xl text-gray-50'>Next</span></div>
         </div>
+    </div>
   )
 }
 
