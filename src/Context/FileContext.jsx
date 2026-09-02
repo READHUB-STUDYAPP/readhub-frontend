@@ -300,6 +300,19 @@ export function FileProvider({ children }) {
     [selectedFile2],
   );
 
+  /**
+   * Records that a book's sharing was turned on or off.
+   *
+   * Held here rather than refetching the library: the change is one boolean on
+   * one book, and re-reading every book to learn it would make the whole list
+   * flicker for nothing.
+   */
+  const setBookShared = useCallback((bookId, isPublic) => {
+    setFiles((prev) =>
+      prev.map((book) => (book._id === bookId ? { ...book, isPublic } : book)),
+    );
+  }, []);
+
   //Update reading progress
   const updateProgress = useCallback(async (bookId, currentPage) => {
     try {
@@ -420,6 +433,7 @@ export function FileProvider({ children }) {
         deleteBook,
         setBookCategory,
         updateProgress,
+        setBookShared,
         addHighlight,
         getHighlights,
         removeHighlight,

@@ -237,17 +237,17 @@ const EpubReader = forwardRef(
     return (
       <>
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center z-10 bg-white">
+          <div className="absolute inset-0 flex items-center justify-center z-10 bg-surface">
             <div className="text-center">
-              <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-gray-600">Loading your book...</p>
+              <div className="w-16 h-16 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-ink-faint">Loading your book...</p>
             </div>
           </div>
         )}
 
         {error && (
-          <div className="absolute inset-0 flex items-center justify-center z-10 bg-white">
-            <p className="text-red-500">{error}</p>
+          <div className="absolute inset-0 flex items-center justify-center z-10 bg-surface">
+            <p className="text-danger">{error}</p>
           </div>
         )}
 

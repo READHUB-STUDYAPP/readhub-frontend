@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* The design system, ported from the mobile app. Defines the semantic colour
+   tokens, the dark theme, and the spacing/radius scales. */
+@import "./theme.css";
+
 * {
   font-family: "Manrope", sans-serif;
   box-sizing: border-box;
@@ -16,15 +20,28 @@
   scrollbar-color: rgba(100, 100, 100, 0.5) transparent;
 }
 
-@theme {
-  --color-primary: #2d7ff9;
-  --color-light_primary: #e6f0fe;
-  --color-secondary: #0f172a;
-  --color-tertiary: #4b6481;
-  --color-neutral: #212121;
-  --color-neutral_variant: #696363;
+@theme inline {
+  /*
+   * The original names, pointed at the themed palette.
+   *
+   * These were fixed hex values, which is why switching to dark left most of
+   * the app in light colours: every `text-tertiary` and `bg-white` on a page
+   * kept its light-mode value whatever the theme said. Pointing them at the
+   * palette in theme.css means the hundreds of existing usages follow the
+   * theme without each one being rewritten.
+   *
+   * `inline` matters here: it makes each utility reference the palette variable
+   * directly, so the value is resolved against whichever theme is active
+   * instead of being frozen at build time.
+   */
+  --color-primary: var(--brand);
+  --color-light_primary: var(--brand-wash);
+  --color-secondary: var(--ink);
+  --color-tertiary: var(--ink-soft);
+  --color-neutral: var(--ink);
+  --color-neutral_variant: var(--ink-faint);
 
-  --color-background: #f5f5f5;
+  --color-background: var(--page);
 
   --font-manrope: "Manrope", sans-serif;
 
@@ -50,8 +67,8 @@
 
   --breakpoint-xsm: 23rem;
 
-  /* Focus Mode Styles */
-    --color-focusBg: #F5F9FF;
-    --color-focusBlue :#2D7FF9;
+  /* Focus Mode */
+    --color-focusBg: var(--surface-sunk);
+    --color-focusBlue: var(--brand);
 }
 

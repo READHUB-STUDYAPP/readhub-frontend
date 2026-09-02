@@ -50,7 +50,7 @@ const Focus = ({
                 </defs>
               </svg>
             </span>
-            <h4 className="text-16px font-semibold text-[#222124] mt-4">
+            <h4 className="text-16px font-semibold text-[var(--ink)] mt-4">
               Focus Mode
             </h4>
             <p className="text-[#555555] text-[12px] font-normal">
@@ -99,7 +99,7 @@ const Focus = ({
           <div className="mt-10 mb-15">
             {isActive ? (
               <div className="flex justify-between px-15">
-                <span className="bg-[#0F172A] w-[33px] h-[33px] flex items-center rounded-[6px] justify-center">
+                <span className="bg-[var(--ink)] w-[33px] h-[33px] flex items-center rounded-[6px] justify-center">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="16"
@@ -113,7 +113,7 @@ const Focus = ({
                     />
                   </svg>
                 </span>
-                <span className="flex border-[#0F172A] w-[33px] h-[33px] border-1 items-center rounded-[6px] justify-center">
+                <span className="flex border-[var(--ink)] w-[33px] h-[33px] border-1 items-center rounded-[6px] justify-center">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="16"
@@ -128,7 +128,7 @@ const Focus = ({
                   </svg>
                 </span>
                 <Button
-                  buttonStyle="flex w-[115px] h-[30px] text-[12px] font-medium rounded-[6px] bg-[#C80404] text-[#fff] justify-center items-center"
+                  buttonStyle="flex w-[115px] h-[30px] text-[12px] font-medium rounded-[6px] bg-[var(--danger)] text-[#fff] justify-center items-center"
                   buttonText={"End Session"}
                   onButtonClick={() => {
                     setIsActive(false);
@@ -143,7 +143,7 @@ const Focus = ({
                       <Button
                         buttonText={time + "mins"}
                         buttonStyle={
-                          "focus:bg-focusBlue focus:text-white text-[#222124] text-[12px] font-medium bg-white h-[24px] w-[60px] rounded-[6px]"
+                          "focus:bg-focusBlue focus:text-white text-[var(--ink)] text-[12px] font-medium bg-surface h-[24px] w-[60px] rounded-[6px]"
                         }
                         onButtonClick={null}
                       />
@@ -156,9 +156,9 @@ const Focus = ({
         </div>
         {!isActive && (
           <div>
-            <div className="bg-white flex flex-col h-fit rounded-[20px] transition-all duration-500">
+            <div className="bg-surface flex flex-col h-fit rounded-[20px] transition-all duration-500">
               <div className="h-15 flex items-center px-4 justify-between w-full rounded-[9px]">
-                <p className="text-[#222124] font-medium text-[13px]">
+                <p className="text-[var(--ink)] font-medium text-[13px]">
                   Focus Setting
                 </p>
                 <div
@@ -188,20 +188,20 @@ const Focus = ({
                 {settingsOpen && (
                   <div className="text-[12px] px-4 pt-4">
                     <div className="pb-8">
-                      <p className="font-medium text-[#222124]">
+                      <p className="font-medium text-[var(--ink)]">
                         Notification Mode
                       </p>
                       <div className="flex justify-between mt-2">
                         <Button
                           buttonText={
-                            <div className="flex flex-col group-focus:text-[#2D7FF9] justify-center items-center ">
+                            <div className="flex flex-col group-focus:text-[var(--brand)] justify-center items-center ">
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 width="12"
                                 height="14"
                                 viewBox="0 0 12 14"
                                 fill="none"
-                                className="group-focus:fill-[#2D7FF9] fill-[#222124]"
+                                className="group-focus:fill-[var(--brand)] fill-[var(--ink)]"
                               >
                                 <path
                                   d="M7.49127 11.3333C8.06793 11.3333 8.3726 12.016 7.98793 12.4453C7.73783 12.7247 7.43162 12.9482 7.0893 13.1012C6.74698 13.2542 6.37623 13.3333 6.00127 13.3333C5.6263 13.3333 5.25556 13.2542 4.91323 13.1012C4.57091 12.9482 4.2647 12.7247 4.0146 12.4453C3.6466 12.0347 3.90927 11.3927 4.43727 11.338L4.5106 11.334L7.49127 11.3333ZM6.00127 0C6.9066 0 7.67193 0.602 7.91793 1.42733L7.9486 1.54133L7.95393 1.57C8.68896 1.98447 9.31531 2.56724 9.78162 3.27053C10.2479 3.97382 10.5409 4.77761 10.6366 5.616L10.6553 5.80733L10.6679 6V7.954L10.6819 8.04467C10.7732 8.53588 11.045 8.97514 11.4439 9.276L11.5553 9.354L11.6633 9.42C12.2366 9.74467 12.0366 10.5973 11.4119 10.6627L11.3346 10.6667H0.667934C-0.0173997 10.6667 -0.256733 9.75733 0.339267 9.42C0.593287 9.27625 0.812765 9.07864 0.982293 8.84104C1.15182 8.60345 1.26729 8.33163 1.3206 8.04467L1.3346 7.94933L1.33527 5.96933C1.37592 5.09859 1.62937 4.25107 2.07346 3.50098C2.51754 2.75088 3.13871 2.12107 3.8826 1.66667L4.04793 1.56933L4.0546 1.54067C4.14864 1.14189 4.36289 0.781609 4.66837 0.508564C4.97384 0.235519 5.35581 0.0628806 5.7626 0.0139999L5.88393 0.00266663L6.00127 0Z"
@@ -212,20 +212,20 @@ const Focus = ({
                             </div>
                           }
                           buttonStyle={
-                            "w-[99px] h-[59px] border-[1px] rounded-[9px] border-[#5F5F616B] group focus:border-[#2D7FF9]"
+                            "w-[99px] h-[59px] border-[1px] rounded-[9px] border-[#5F5F616B] group focus:border-[var(--brand)]"
                           }
                         />
 
                         <Button
                           buttonText={
-                            <div className="flex flex-col group-focus:text-[#2D7FF9] justify-center items-center ">
+                            <div className="flex flex-col group-focus:text-[var(--brand)] justify-center items-center ">
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 width="12"
                                 height="14"
                                 viewBox="0 0 12 14"
                                 fill="none"
-                                className="group-focus:fill-[#2D7FF9] fill-[#222124]"
+                                className="group-focus:fill-[var(--brand)] fill-[var(--ink)]"
                               >
                                 <path
                                   d="M7.49127 11.3333C8.06793 11.3333 8.3726 12.016 7.98793 12.4453C7.73783 12.7247 7.43162 12.9482 7.0893 13.1012C6.74698 13.2542 6.37623 13.3333 6.00127 13.3333C5.6263 13.3333 5.25556 13.2542 4.91323 13.1012C4.57091 12.9482 4.2647 12.7247 4.0146 12.4453C3.6466 12.0347 3.90927 11.3927 4.43727 11.338L4.5106 11.334L7.49127 11.3333ZM6.00127 0C6.9066 0 7.67193 0.602 7.91793 1.42733L7.9486 1.54133L7.95393 1.57C8.68896 1.98447 9.31531 2.56724 9.78162 3.27053C10.2479 3.97382 10.5409 4.77761 10.6366 5.616L10.6553 5.80733L10.6679 6V7.954L10.6819 8.04467C10.7732 8.53588 11.045 8.97514 11.4439 9.276L11.5553 9.354L11.6633 9.42C12.2366 9.74467 12.0366 10.5973 11.4119 10.6627L11.3346 10.6667H0.667934C-0.0173997 10.6667 -0.256733 9.75733 0.339267 9.42C0.593287 9.27625 0.812765 9.07864 0.982293 8.84104C1.15182 8.60345 1.26729 8.33163 1.3206 8.04467L1.3346 7.94933L1.33527 5.96933C1.37592 5.09859 1.62937 4.25107 2.07346 3.50098C2.51754 2.75088 3.13871 2.12107 3.8826 1.66667L4.04793 1.56933L4.0546 1.54067C4.14864 1.14189 4.36289 0.781609 4.66837 0.508564C4.97384 0.235519 5.35581 0.0628806 5.7626 0.0139999L5.88393 0.00266663L6.00127 0Z"
@@ -236,19 +236,19 @@ const Focus = ({
                             </div>
                           }
                           buttonStyle={
-                            "w-[99px] h-[59px] border-[1px] rounded-[9px] border-[#5F5F616B] group focus:border-[#2D7FF9]"
+                            "w-[99px] h-[59px] border-[1px] rounded-[9px] border-[#5F5F616B] group focus:border-[var(--brand)]"
                           }
                         />
 
                         <Button
                           buttonText={
-                            <div className="flex flex-col group-focus:text-[#2D7FF9] justify-center items-center ">
+                            <div className="flex flex-col group-focus:text-[var(--brand)] justify-center items-center ">
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 width="16"
                                 height="16"
                                 viewBox="0 0 16 16"
-                                className="group-focus:fill-[#2D7FF9] fill-[#222124]"
+                                className="group-focus:fill-[var(--brand)] fill-[var(--ink)]"
                               >
                                 <path d="M13.5635 12.6213C13.6913 12.5754 13.8018 12.4911 13.8799 12.38C13.9581 12.2689 14.0001 12.1365 14.0001 12.0007V11.334C14.0001 11.1572 13.9298 10.9876 13.8048 10.8627L12.6668 9.72465V6.66732C12.6668 4.52265 11.2101 2.71598 9.23681 2.17265C9.04147 1.68065 8.56414 1.33398 8.00014 1.33398C7.43614 1.33398 6.95881 1.68065 6.76348 2.17265C5.88148 2.41532 5.12147 2.92465 4.53281 3.59065L2.47148 1.52932L1.52881 2.47198L13.5288 14.472L14.4715 13.5293L13.5635 12.6213ZM8.00014 14.6673C8.41301 14.6678 8.81578 14.5397 9.15247 14.3008C9.48916 14.0618 9.74303 13.7239 9.87881 13.334H6.12148C6.25725 13.7239 6.51113 14.0618 6.84782 14.3008C7.1845 14.5397 7.58728 14.6678 8.00014 14.6673ZM3.33348 6.66732V9.72465L2.19548 10.8627C2.07044 10.9876 2.00018 11.1572 2.00014 11.334V12.0007C2.00014 12.1775 2.07038 12.347 2.1954 12.4721C2.32043 12.5971 2.49 12.6673 2.66681 12.6673H9.91948L3.37881 6.12665C3.35814 6.30532 3.33348 6.48332 3.33348 6.66732Z" />
                               </svg>
@@ -256,7 +256,7 @@ const Focus = ({
                             </div>
                           }
                           buttonStyle={
-                            "w-[99px] h-[59px] border-[1px] rounded-[9px] border-[#5F5F616B] group focus:border-[#2D7FF9]"
+                            "w-[99px] h-[59px] border-[1px] rounded-[9px] border-[#5F5F616B] group focus:border-[var(--brand)]"
                           }
                         />
                       </div>
@@ -267,25 +267,25 @@ const Focus = ({
                       <div className="mt-2 flex flex-wrap justify-between gap-3 ">
                         <Button
                           buttonStyle={
-                            "w-[146px] h-[32px] rounded-[9px] border-[1px] border-[#5F5F616B] text-[#222124] font-normal text-[12px] flex items-center pl-5"
+                            "w-[146px] h-[32px] rounded-[9px] border-[1px] border-[#5F5F616B] text-[var(--ink)] font-normal text-[12px] flex items-center pl-5"
                           }
                           buttonText={"WhatsApp"}
                         />
                         <Button
                           buttonStyle={
-                            "w-[146px] h-[32px] rounded-[9px] border-[1px] border-[#5F5F616B] text-[#222124] font-normal text-[12px] flex items-center pl-5"
+                            "w-[146px] h-[32px] rounded-[9px] border-[1px] border-[#5F5F616B] text-[var(--ink)] font-normal text-[12px] flex items-center pl-5"
                           }
                           buttonText={"Email"}
                         />
                         <Button
                           buttonStyle={
-                            "w-[146px] h-[32px] rounded-[9px] border-[1px] border-[#5F5F616B] text-[#222124] font-normal text-[12px] flex items-center pl-5"
+                            "w-[146px] h-[32px] rounded-[9px] border-[1px] border-[#5F5F616B] text-[var(--ink)] font-normal text-[12px] flex items-center pl-5"
                           }
                           buttonText={"Telegram"}
                         />
                         <Button
                           buttonStyle={
-                            "w-[146px] h-[32px] rounded-[9px] border-[1px] border-[#5F5F616B] text-[#222124] font-normal text-[12px] flex items-center pl-5"
+                            "w-[146px] h-[32px] rounded-[9px] border-[1px] border-[#5F5F616B] text-[var(--ink)] font-normal text-[12px] flex items-center pl-5"
                           }
                           buttonText={"Other"}
                         />
@@ -351,7 +351,7 @@ const Focus = ({
                       <Button
                         buttonText={"Done"}
                         buttonStyle={
-                          "w-[98px] h-[35px] text-white bg-[#2D7FF9] rounded-[19px]"
+                          "w-[98px] h-[35px] text-white bg-[var(--brand)] rounded-[19px]"
                         }
                         onButtonClick={() => {
                           setSettingsOpen(false);

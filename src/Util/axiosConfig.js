@@ -13,6 +13,30 @@ const axiosConfig = axios.create({
 // List of endpoints that do not require authorization header
 const excludeEndpoints = ["auth/login", "auth/register", "auth/refresh", "auth/logout", "auth/forget-password", "auth/password-token-verification", "auth/reset-password", "auth/google", "admin/login", "admin/invite/accept"];
 
+const isAuthEndpoint = (url) => excludeEndpoints.some((endpoint) => url?.includes(endpoint));
+
+/**
+ * The refresh in flight, if there is one.
+ *
+ * Shared, so a screen firing several requests at once when its access token
+ * has just expired performs one refresh rather than one per request. Without
+ * it they race, and the losers retry with a token the winner has already
+ * replaced.
+ */
+let refreshing = null;
+
+const requestNewAccessToken = async () => {
+    // The backend reads the refresh token from the httpOnly cookie, so there
+    // is nothing to send but the credentials.
+    const { data } = await axios.post(`${baseURL}${apiEndpoints.REFRESH_TOKEN}`, {}, { withCredentials: true });
+
+    const accessToken = data?.accessToken;
+    if (!accessToken) throw new Error("No access token in refresh response");
+
+    localStorage.setItem("token", accessToken);
+    return accessToken;
+};
+
 // Request interceptor
 axiosConfig.interceptors.request.use((config) => {
     const shouldSkipToken = excludeEndpoints.some((endpoint) => {
@@ -43,16 +67,20 @@ axiosConfig.interceptors.response.use((response) => {
             return Promise.reject(error);
         }
 
+        // Never for an endpoint that carries no access token: a wrong password
+        // answers 401, and refreshing after it is nonsense.
+        if (isAuthEndpoint(originalRequest.url)) {
+            return Promise.reject(error);
+        }
+
         // Check if the error is 401 and not a retry request
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
 
             try {
-                // The backend reads the refresh token from the HttpOnly cookie.
-                const response = await axios.post(`${baseURL}${apiEndpoints.REFRESH_TOKEN}`, {}, { withCredentials: true });
-
-                const { accessToken: newAccessToken } = response.data;
-                localStorage.setItem("token", newAccessToken);
+                // Whoever arrives first starts the refresh; the rest await it.
+                refreshing = refreshing ?? requestNewAccessToken();
+                const newAccessToken = await refreshing;
 
                 // Update the authorization header and retry the original request
                 axiosConfig.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
@@ -63,6 +91,8 @@ axiosConfig.interceptors.response.use((response) => {
                 // If refresh token fails, logout
                 handleLogout();
                 return Promise.reject(_error);
+            } finally {
+                refreshing = null;
             }
         }
 
@@ -72,7 +102,7 @@ axiosConfig.interceptors.response.use((response) => {
 
 const handleLogout = () => {
     
-    axiosConfig.post(apiEndpoints.LOGOUT, { refreshToken: localStorage.getItem("refreshToken") }).catch(err => console.error("Logout API call failed", err));
+    axiosConfig.post(apiEndpoints.LOGOUT, {}).catch(() => {});
 
     localStorage.removeItem("token");
     localStorage.removeItem("refreshToken");
