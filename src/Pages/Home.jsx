@@ -7,6 +7,21 @@ import { apiEndpoints } from "../Util/apiEndpoints";
 import axiosConfig from "../Util/axiosConfig";
 import LoadingContCard from "../Components/LoadingContCard";
 
+/**
+ * The shortcuts under the reading goal.
+ *
+ * The tints stay fixed across themes on purpose: they identify the four
+ * destinations the way a folder colour does, they are the same four the phone
+ * app uses, and each is only ever a ground for a white glyph.
+ */
+const QUICK_ACTIONS = [
+  { label: 'Library', to: '/library', icon: '/library_books.svg', tint: 'var(--brand)' },
+  { label: 'Notes', to: '/notes', icon: '/note_stack.svg', tint: '#F59E0B' },
+  { label: 'Focus', to: '/focus', icon: '/lock_clock.svg', tint: '#10B981' },
+  { label: 'Explore', to: '/explore', icon: '/explore.svg', tint: '#A855F7' },
+];
+
+
 const Home = () => {
   const navigate = useNavigate();
   const [continueRead, setContinueRead] = useState(false);
@@ -103,15 +118,15 @@ const Home = () => {
            
           </span>
           <span className="flex flex-col pl-1 w-fit">
-            <p className="bg-[#D9D9D9] h-3 animate-pulse rounded-[3px]">
+            <p className="bg-[var(--border)] h-3 animate-pulse rounded-[3px]">
             </p>
-            <p className="w-20 mt-1 h-[17px] bg-[#D9D9D9] animate-pulse rounded-[3px]">
+            <p className="w-20 mt-1 h-[17px] bg-[var(--border)] animate-pulse rounded-[3px]">
             </p>
           </span>
         </div>
         <div>
           <div
-            className="w-40 h-[36px] bg-[#E6E6E6] animate-pulse rounded-full flex justify-center items-center px-3 sm:px-[24px] relative overflow-hidden"
+            className="w-40 h-[36px] bg-[var(--border)] animate-pulse rounded-full flex justify-center items-center px-3 sm:px-[24px] relative overflow-hidden"
           >
       
           </div>
@@ -119,48 +134,32 @@ const Home = () => {
       </div>
 
       <div className="px-[16px] pb-[26px] xsm:text-[15px]">
-        <div className="bg-[#E6E6E6] animate-pulse min-h-[177px] rounded-[20px] relative overflow-hidden text-white px-[16px] py-[23px] flex flex-col justify-between">
-          <span className="flex h-[100px] w-[100px] bg-white/20 rounded-full absolute left-72 top-[-30px]"></span>
-          <span className="flex h-[100px] w-[100px] bg-white/20 rounded-full absolute top-30 left-[-40px]"></span>
+        <div className="bg-[var(--border)] animate-pulse min-h-[177px] rounded-[20px] relative overflow-hidden text-white px-[16px] py-[23px] flex flex-col justify-between">
+          <span className="flex h-[100px] w-[100px] bg-surface/20 rounded-full absolute left-72 top-[-30px]"></span>
+          <span className="flex h-[100px] w-[100px] bg-surface/20 rounded-full absolute top-30 left-[-40px]"></span>
         </div>
       </div>
 
-      <div className="flex justify-between px-[16px] pb-5">
-        <div>
-          <div className="bg-[#E6E6E6] animate-pulse w-[79px] h-[80px] rounded-[15.89px] flex flex-col justify-center items-center">
-            
-          </div>
-        </div>
-
-           <div>
-          <div className="bg-[#E6E6E6] animate-pulse w-[79px] h-[80px] rounded-[15.89px] flex flex-col justify-center items-center">
-            
-          </div>
-        </div>
-
-           <div>
-          <div className="bg-[#E6E6E6] animate-pulse w-[79px] h-[80px] rounded-[15.89px] flex flex-col justify-center items-center">
-            
-          </div>
-        </div>
-           <div>
-          <div className="bg-[#E6E6E6] animate-pulse w-[79px] h-[80px] rounded-[15.89px] flex flex-col justify-center items-center">
-            
-          </div>
-        </div>
+      <div className="grid grid-cols-4 gap-2 px-[16px] pb-5 sm:gap-4">
+        {[0, 1, 2, 3].map((key) => (
+          <div
+            key={key}
+            className="mx-auto h-[80px] w-full max-w-[96px] animate-pulse rounded-[15.89px] bg-[var(--border)]"
+          />
+        ))}
       </div>
 
       <div className="px-[16px] pb-10">
         <div className="bg-[#fff] px-[16px] min-h-[133px] rounded-[20px] py-[20px] flex flex-col justify-between ">
-          <p className="bg-[#E6E6E6] animate-pulse w-30 h-[18px] rounded-[3px]"></p>
-          <p className="bg-[#E6E6E6] animate-pulse w-40 h-[18px] leading-4 rounded-[3px]">
+          <p className="bg-[var(--border)] animate-pulse w-30 h-[18px] rounded-[3px]"></p>
+          <p className="bg-[var(--border)] animate-pulse w-40 h-[18px] leading-4 rounded-[3px]">
           </p>
-          <p className="bg-[#E6E6E6] animate-pulse w-25 h-[18px] rounded-[3px]"></p>
+          <p className="bg-[var(--border)] animate-pulse w-25 h-[18px] rounded-[3px]"></p>
         </div>
       </div>
 
           <div className="px-4">
-            <div className="font-medium mb-5 bg-[#D9D9D9] animate-pulse h-[20px] w-40 rounded-[3px]"></div>
+            <div className="font-medium mb-5 bg-[var(--border)] animate-pulse h-[20px] w-40 rounded-[3px]"></div>
             <LoadingContCard/>
           </div>
   
@@ -236,8 +235,8 @@ const Home = () => {
 
       <div className="px-[16px] pb-[26px] xsm:text-[15px]">
         <div className="bg-primary min-h-[177px] rounded-[20px] relative overflow-hidden text-white px-[16px] py-[23px] flex flex-col justify-between">
-          <span className="flex h-[100px] w-[100px] bg-white/20 rounded-full absolute left-72 top-[-30px]"></span>
-          <span className="flex h-[100px] w-[100px] bg-white/20 rounded-full absolute top-30 left-[-40px]"></span>
+          <span className="flex h-[100px] w-[100px] bg-surface/20 rounded-full absolute left-72 top-[-30px]"></span>
+          <span className="flex h-[100px] w-[100px] bg-surface/20 rounded-full absolute top-30 left-[-40px]"></span>
           <div className="flex items-center">
             <img src="/Group2.svg" alt="asset" className="w-[20px] h-[20px]" />
             <p className="pl-2 font-medium">Daily Reading Goal</p>
@@ -251,7 +250,7 @@ const Home = () => {
             </span>
             <span className="w-full bg-[#cde1fe] h-[14px] flex rounded-full overflow-hidden">
               <span
-                className="h-full bg-blue-700 rounded-full transition-all duration-300"
+                className="h-full bg-brand-strong rounded-full transition-all duration-300"
                 style={{ width: `${progressPct}%` }}
               />
             </span>
@@ -266,68 +265,42 @@ const Home = () => {
         </div>
       </div>
 
-      <div className="flex justify-between px-[16px] pb-5">
-        <div>
-          <div className="bg-white w-[79px] h-[80px] rounded-[15.89px] flex flex-col justify-center items-center">
-            <div
-              className="bg-primary rounded-[8.45px] w-[42px] h-[42.53px] flex justify-center active:bg-primary/80"
-              onClick={() => {
-                navigate("/library");
-              }}
-            >
-              <img src="/library_books.svg" className="w-[24px]" />
-            </div>
-            <p className="text-[#4d4d4d] text-body_Small">Library</p>
-          </div>
-        </div>
+      {/*
+        The four shortcuts.
 
-        <div>
-          <div className="bg-white w-[79px] h-[80px] rounded-[15.89px] flex flex-col justify-center items-center">
-            <div
-              className="bg-[#F59E0B] rounded-[8.45px] w-[42px] h-[42.53px] flex justify-center active:bg-[#F59E0B]/80"
-              onClick={() => {
-                navigate("/notes");
-              }}
-            >
-              <img src="/note_stack.svg" className="w-[24px]" />
-            </div>
-            <p className="text-[#4d4d4d] text-body_Small">Notes</p>
-          </div>
-        </div>
+        Each tile was a fixed 79px inside a `justify-between` row: four of them
+        plus the page padding came to more than a phone viewport, so the whole
+        page scrolled sideways. A four-column grid lets them share whatever
+        width there is, and `max-w` stops them becoming four enormous squares
+        on a desktop.
 
-        <div>
-          <div className="bg-white w-[79px] h-[80px] rounded-[15.89px] flex flex-col justify-center items-center">
-            <div
-              className="bg-[#10B981] rounded-[8.45px] w-[42px] h-[42.53px] flex justify-center active:bg-[#10B981]/80"
-              onClick={() => {
-                navigate("/focus");
-              }}
+        The whole tile is the button now. Only the coloured icon square was
+        clickable before, so tapping the word "Library" did nothing -- and the
+        word is the part that says where you are going.
+      */}
+      <div className="grid grid-cols-4 gap-2 px-[16px] pb-5 sm:gap-4">
+        {QUICK_ACTIONS.map((action) => (
+          <button
+            key={action.label}
+            type="button"
+            onClick={() => navigate(action.to)}
+            className="mx-auto flex h-[80px] w-full max-w-[96px] flex-col items-center justify-center gap-1 rounded-[15.89px] bg-surface transition-colors hover:bg-surface-variant"
+          >
+            <span
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-[8.45px]"
+              style={{ backgroundColor: action.tint }}
             >
-              <img src="/lock_clock.svg" className="w-[24px]" />
-            </div>
-            <p className="text-[#4d4d4d] text-body_Small">Focus</p>
-          </div>
-        </div>
-
-        <div>
-          <div className="bg-white w-[79px] h-[80px] rounded-[15.89px] flex flex-col justify-center items-center">
-            <div
-              className="bg-[#A855F7] rounded-[8.45px] w-[42px] h-[42.53px] flex justify-center active:bg-[#A855F7]/80"
-              onClick={() => {
-                navigate("/explore");
-              }}
-            >
-              <img src="/explore.svg" className="w-[24px]" />
-            </div>
-            <p className="text-[#4d4d4d] text-body_Small">Explore</p>
-          </div>
-        </div>
+              <img src={action.icon} alt="" className="w-[24px]" />
+            </span>
+            <span className="text-[var(--ink-soft)] text-body_Small">{action.label}</span>
+          </button>
+        ))}
       </div>
 
       <div className="px-[16px] pb-10">
         <div className="bg-[#fff] px-[16px] min-h-[133px] rounded-[20px] py-[20px] flex flex-col justify-between">
-          <p className="text-tittle_Small text-[#5f5f61]">Daily Inspiration</p>
-          <p className="text-black font-medium text-[14px] leading-4">
+          <p className="text-tittle_Small text-[var(--ink-soft)]">Daily Inspiration</p>
+          <p className="text-ink font-medium text-[14px] leading-4">
             “Reading is essential for those who seek to rise above the ordinary”
           </p>
           <p className="text-primary text-tittle_Small">- Jim John</p>

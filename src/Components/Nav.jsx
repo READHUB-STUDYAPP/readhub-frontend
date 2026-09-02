@@ -6,7 +6,7 @@ import { NavLink } from "react-router-dom";
 const Nav = () => {
   return (
     <div>
-      <nav className="flex justify-between px-[17px] py-[10px]  text-[12px] fixed w-full bottom-0 bg-white ">
+      <nav className="flex justify-between px-[17px] py-[10px]  text-[12px] fixed w-full bottom-0 bg-surface ">
         <NavLink
           to={"/home"}
           className={({ isActive }) =>
