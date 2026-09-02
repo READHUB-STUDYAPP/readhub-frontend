@@ -78,7 +78,7 @@ const Otp = () => {
             key={i}
             type='text'
             maxLength={1}
-            className='form-control text-center fs-4 otp-input text-black'
+            className='form-control text-center fs-4 otp-input text-ink'
             ref={(el) => (inputRef.current[i] = el)}
             onChange={(e) => handleChange(e, i)}
             onKeyDown={(e) => handleKeyDown(e, i)}

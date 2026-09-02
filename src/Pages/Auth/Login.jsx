@@ -4,9 +4,12 @@ import { GoogleLogin } from "@react-oauth/google";
 import { toast } from "react-toastify";
 import { validateEmail } from "./validate";
 import { ReadHubImages } from "../../assets/asset";
+import AuthLayout, { AuthButton, AuthField, AuthProviders } from "../../Components/AuthLayout";
 import axiosConfig from "../../Util/axiosConfig";
+import { authInputClass } from "../../Util/authStyles";
 import { apiEndpoints } from "../../Util/apiEndpoints";
 import { LuEye, LuEyeOff, LuLoaderCircle } from "react-icons/lu";
+import { storeSession } from "../../Util/session";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -39,11 +42,7 @@ const Login = () => {
         password,
       });
 
-      const { accessToken, refreshToken } = response.data;
-
-      // Store tokens in localStorage
-      localStorage.setItem("token", accessToken);
-      localStorage.setItem("refreshToken", refreshToken);
+      storeSession(response.data);
 
       setLoading(false);
       navigate("/home");
@@ -71,8 +70,7 @@ const Login = () => {
       });
       if (response.status === 200) {
         toast.success("Logged in successfully.");
-        localStorage.setItem("refreshToken", response.data.refreshToken);
-        localStorage.setItem("token", response.data.accessToken);
+        storeSession(response.data);
         navigate("/home");
       }
     } catch (err) {
@@ -93,139 +91,95 @@ const Login = () => {
   };
 
   return (
-    <>
-      <div className="signup">
-        <div className="signupContent">
-          <div className="header">
-            <span className="heading">Welcome Back</span>
-            <span className="subheading">Continue your reading journey</span>
+    <AuthLayout title="Welcome Back" subtitle="Continue your reading journey">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <AuthField label="Email">
+          <input
+            type="email"
+            id="email"
+            autoComplete="email"
+            placeholder="example@gmail.com"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={authInputClass(false)}
+          />
+        </AuthField>
+
+        {/* The error sits on the password field, as in the design: it is the
+            one the reader is most likely to have got wrong, and the server
+            will not say which of the two it was. */}
+        <AuthField label="Password" error={error}>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              id="password"
+              autoComplete="current-password"
+              placeholder="********"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={`${authInputClass(Boolean(error))} pr-12`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((shown) => !shown)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint transition-colors hover:text-ink"
+            >
+              {showPassword ? <LuEyeOff size={18} /> : <LuEye size={18} />}
+            </button>
           </div>
+        </AuthField>
 
-          <form onSubmit={handleSubmit} className="signupForm">
-            <div className="inputFields">
-              <div className="field">
-                <label htmlFor="">Email</label>
-                <input
-                  type="text"
-                  id="email"
-                  className="form-control"
-                  placeholder="example@gmail.com"
-                  required
-                  onChange={(e) => setEmail(e.target.value)}
-                  value={email}
-                />
-              </div>
+        <button
+          type="button"
+          onClick={() => navigate("/forgotpassword")}
+          className="self-end text-label_Medium font-semibold text-brand hover:underline"
+        >
+          Forgot Password?
+        </button>
 
-              <div className="field">
-                <label htmlFor="">Password</label>
-                <div style={{ position: "relative", width: "100%" }}>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    id="password"
-                    className="form-control"
-                    placeholder="********"
-                    required
-                    onChange={(e) => setPassword(e.target.value)}
-                    value={password}
-                    style={{ paddingRight: "44px" }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((s) => !s)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    style={{
-                      position: "absolute",
-                      right: "12px",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      background: "transparent",
-                      border: "none",
-                      padding: 0,
-                      cursor: "pointer",
-                      color: "#4d4d4d",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {showPassword ? <LuEyeOff size={18} /> : <LuEye size={18} />}
-                  </button>
-                </div>
-              </div>
+        <AuthButton loading={loading}>
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <LuLoaderCircle className="h-4 w-4 animate-spin" />
+              Signing In...
+            </span>
+          ) : (
+            "Sign In"
+          )}
+        </AuthButton>
 
-              <div style={{ justifyContent: "end", marginLeft: "12rem" }}>
-                <span
-                  style={{ color: "#2d7ff9" }}
-                  onClick={() => navigate("/forgotpassword")}
-                >
-                  Forgot Password?
-                </span>
-              </div>
+        <AuthProviders>
+          {/* The SDK draws this button inside an iframe, so its corners cannot
+              be styled from here -- `shape="pill"` is how it is asked for, and
+              it matches the rounded actions on the rest of the page. */}
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            shape="pill"
+            size="large"
+            text="signin_with"
+            width="280"
+            logo_alignment="center"
+          />
+        </AuthProviders>
 
-              {error && (
-                <p
-                  className="errorText"
-                  style={{
-                    color: "red",
-                    alignItems: "center",
-                    backgroundColor: "none",
-                  }}
-                >
-                  {error}
-                </p>
-              )}
-
-              <button
-                disabled={loading}
-                className={`btn-primary bg-blue-400 rounded-lg text-white w-full py-3 text-lg font-medium flex items-center justify-center gap-2 ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
-                type="submit"
-              >
-                {loading ? (
-                  <>
-                    <LuLoaderCircle className="animate-spin w-4 h-4" />
-                    Signing In...
-                  </>
-                ) : (
-                  "Sign In"
-                )}
-              </button>
-
-              <div className="separator">
-                <hr className="short-line" />
-                <span>Or continue with</span>
-                <hr className="short-line" />
-              </div>
-
-              <div className="icons">
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={handleGoogleError}
-                />
-                <span>
-                  <img
-                    className="googleImg"
-                    src={ReadHubImages.AppleIcon}
-                    alt="Apple login"
-                  />
-                </span>
-              </div>
-
-              <div className="loginOption">
-                <span style={{ color: "#4d4d4d" }}>
-                  Already have an account?
-                </span>
-                <span
-                  onClick={() => navigate("/signup")}
-                  style={{ color: "#2D7FF9" }}
-                >
-                  Sign Up
-                </span>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-    </>
+        <p className="text-center text-body_Medium text-ink-soft">
+          {/* Was "Already have an account?" on the sign-in page, which is the
+              sign-up page's line. */}
+          Don&apos;t have an account?{" "}
+          <button
+            type="button"
+            onClick={() => navigate("/signup")}
+            className="font-bold text-brand hover:underline"
+          >
+            Sign Up
+          </button>
+        </p>
+      </form>
+    </AuthLayout>
   );
 };
 
