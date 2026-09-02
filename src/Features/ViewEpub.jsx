@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useFiles } from "../Context/FileContext";
 
 import EpubReader from "../Components/EpubReader";
@@ -7,6 +7,19 @@ import EpubReader from "../Components/EpubReader";
 const ViewEpub = () => {
   const { selectedFile2 } = useFiles();
   const readerRef = useRef(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  /**
+   * Leaves the book for wherever the reader came from -- a group, most often,
+   * rather than their own library, which is where this used to send them.
+   * `key` is 'default' only on the first entry in this session's history,
+   * where there is nothing to go back to.
+   */
+  const goBack = () => {
+    if (location.key !== "default") navigate(-1);
+    else navigate("/library");
+  };
 
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -31,14 +44,14 @@ const ViewEpub = () => {
   };
   return (
     <div
-      className={`w-full h-full bg-fixed overflow-hidden   ${darkToggle ? "bg-[#0B111E] text-[#ECF0F8]" : "bg-white text-[black]"}`}
+      className={`w-full h-full bg-fixed overflow-hidden   ${darkToggle ? "bg-[#0B111E] text-[#ECF0F8]" : "bg-surface text-[black]"}`}
     >
       <div
-        className={`flex justify-between p-4 w-full fixed z-10 items-center ${darkToggle ? "bg-[#0B111E] stroke-primary" : "bg-white stroke-[#1A1A1A]"}`}
+        className={`flex justify-between p-4 w-full fixed z-10 items-center ${darkToggle ? "bg-[#0B111E] stroke-primary" : "bg-surface stroke-[#1A1A1A]"}`}
       >
         <div className="flex items-center">
-          <Link to="/library">
-            <button className="flex items-center gap-1">
+          <button type="button" onClick={goBack} aria-label="Close the book">
+            <div className="flex items-center gap-1">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -53,8 +66,8 @@ const ViewEpub = () => {
                   stroke-linejoin="round"
                 />
               </svg>
-            </button>
-          </Link>
+            </div>
+          </button>
         </div>
 
         <div className="flex gap-6">
@@ -200,7 +213,7 @@ const ViewEpub = () => {
         className={`bg-black/20 w-dvw h-dvh fixed z-11 flex items-baseline-last transition-all duration-300 ${toggleSettings ? "top-[100vh]" : "top-0"}`}
       >
         <div
-          className={`w-dvw h-[50vh] relative rounded-t-[32px] p-[24px] flex flex-col gap-6  ${darkToggle ? "bg-[#011532]" : "bg-white"}`}
+          className={`w-dvw h-[50vh] relative rounded-t-[32px] p-[24px] flex flex-col gap-6  ${darkToggle ? "bg-[#011532]" : "bg-surface"}`}
         >
           <div
             className={`flex  justify-between ${darkToggle ? "text-[#F5F9FF] stroke-[#F5F9FF]" : "text-[#333333] stroke-[#333333]"}`}

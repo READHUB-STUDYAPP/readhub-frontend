@@ -139,7 +139,7 @@ const CustomTextViewer = ({ fileData, file, theme, scale, onTextSelect }) => {
   if (error) {
     return (
       <div className="inline min-h-fit">
-        <p className="text-red-600 inline">Error:</p>
+        <p className="text-danger inline">Error:</p>
         {error}
       </div>
     );
