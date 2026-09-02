@@ -1,5 +1,5 @@
 import React from "react";
-import { FiGlobe, FiLock, FiTrash2 } from "react-icons/fi";
+import { FiChevronDown, FiFolder, FiGlobe, FiLock, FiTrash2 } from "react-icons/fi";
 import { useFiles } from "../Context/FileContext";
 
 const ContCard = ({
@@ -59,41 +59,6 @@ const ContCard = ({
             </p>
 
             <div className="flex shrink-0 items-center gap-1">
-              {onCategoryChange && (
-                /* The select covers the icon, so the whole thing is the
-                   control -- it sits in the row with the other two actions
-                   rather than floating over the title. */
-                <label
-                  className="relative flex h-8 w-8 items-center justify-center rounded-full text-[var(--ink-soft)] transition-colors hover:bg-surface-variant"
-                  title="Set book category"
-                >
-                  <span className="sr-only">Set book category</span>
-                  <svg
-                    className="w-[18px] h-[18px]"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    aria-hidden="true"
-                  >
-                    <path d="M3 6.5A2.5 2.5 0 0 1 5.5 4H10l2 2h6.5A2.5 2.5 0 0 1 21 8.5v9A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5v-11Z" />
-                  </svg>
-                  <select
-                    aria-label={`Set category for ${fileName}`}
-                    value={category || ""}
-                    onChange={(event) => onCategoryChange(event.target.value)}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  >
-                    <option value="">Uncategorized</option>
-                    {categories.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-
               {onToggleShare && (
                 <button
                   type="button"
@@ -143,9 +108,45 @@ const ContCard = ({
             </span>
           </div>
 
-          <p className="text-[var(--ink-soft)] max-xsm:text-[15px]">
-            {`page ${page} of ${totalPage}`}
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[var(--ink-soft)] max-xsm:text-[15px]">
+              {`page ${page} of ${totalPage}`}
+            </p>
+
+            {/*
+              The category, as a pill that is also the control.
+
+              It was a bare folder icon with a transparent <select> laid over
+              it: nothing said it could be opened, and nothing said which
+              category the book was already in -- the one thing a reader looks
+              at a category control to find out. The native select is kept
+              underneath, so a phone still gets its own picker and the keyboard
+              still works.
+            */}
+            {onCategoryChange && (
+              <label
+                className="relative flex max-w-[55%] shrink-0 items-center gap-1 rounded-full border border-line px-2.5 py-1 text-label_Small text-[var(--ink-soft)] transition-colors hover:border-line-strong hover:text-ink"
+                title="Set book category"
+              >
+                <FiFolder size={12} className="shrink-0" aria-hidden="true" />
+                <span className="truncate">{category || "Uncategorized"}</span>
+                <FiChevronDown size={12} className="shrink-0" aria-hidden="true" />
+                <select
+                  aria-label={`Set category for ${fileName}`}
+                  value={category || ""}
+                  onChange={(event) => onCategoryChange(event.target.value)}
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                >
+                  <option value="">Uncategorized</option>
+                  {categories.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
         </div>
       </div>
       <div>

@@ -475,11 +475,39 @@ const Library = () => {
         </div>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto mb-6" aria-label="Filter books by category">
-        <button type="button" onClick={() => setCategoryFilter('All categories')} className={`shrink-0 px-4 py-2 rounded-full bg-white ${categoryFilter === 'All categories' ? 'text-black' : 'text-[#4B6481]'}`}>All categories</button>
-        {categories.map((category) => (
-          <button type="button" key={category} onClick={() => setCategoryFilter(category)} className={`shrink-0 px-4 py-2 rounded-full bg-white text-left ${categoryFilter === category ? 'text-black' : 'text-[#4B6481]'}`}>{category}</button>
-        ))}
+      {/*
+        The category filter.
+
+        The chips were all the same white with only the text colour changing,
+        so the selected one was almost impossible to pick out, and they were
+        hardcoded light colours that ignored the theme. The selected chip now
+        carries the brand, and `aria-pressed` says which is on for anyone not
+        reading the colour.
+      */}
+      <div
+        className="flex gap-2 overflow-x-auto pb-1 mb-6"
+        role="group"
+        aria-label="Filter books by category"
+      >
+        {['All categories', ...categories].map((option) => {
+          const selected = categoryFilter === option;
+
+          return (
+            <button
+              type="button"
+              key={option}
+              onClick={() => setCategoryFilter(option)}
+              aria-pressed={selected}
+              className={`shrink-0 rounded-full px-4 py-2 text-label_Large transition-colors ${
+                selected
+                  ? 'bg-brand font-semibold text-white'
+                  : 'bg-surface text-[var(--ink-soft)] hover:bg-surface-variant hover:text-ink'
+              }`}
+            >
+              {option}
+            </button>
+          );
+        })}
       </div>
 
       <div>
