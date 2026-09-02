@@ -29,6 +29,11 @@ import Statistics from "./Pages/Profile/Statistics";
 import Privacy from "./Pages/Legal/Privacy";
 import Terms from "./Pages/Legal/Terms";
 import ViewEpub from "./Features/ViewEpub";
+import Dashboard from "./Pages/Admin/Dashboard";
+import Readers from "./Pages/Admin/Readers";
+import Books from "./Pages/Admin/Books";
+import AdminLogin from "./Pages/Admin/AdminLogin";
+import AdminAcceptInvite from "./Pages/Admin/AdminAcceptInvite";
 
 /** How long the splash holds before the app appears. */
 const SPLASH_MS = 1400;
@@ -71,12 +76,17 @@ function App() {
    * mounts and starts fetching until the moment has passed. The route the
    * reader asked for is preserved: this is a delay, not a redirect.
    */
-  const [booting, setBooting] = useState(true);
+  // Not for the admin panel: that is a different job, done by someone at work,
+  // and a reader's splash screen in front of it is only a delay.
+  const isAdmin = location.pathname.startsWith("/admin");
+  const [booting, setBooting] = useState(!isAdmin);
 
   useEffect(() => {
+    if (isAdmin) return;
+
     const timer = setTimeout(() => setBooting(false), SPLASH_MS);
     return () => clearTimeout(timer);
-  }, []);
+  }, [isAdmin]);
 
   const [showGoalCelebration, setShowGoalCelebration] = useState(false);
 
@@ -131,6 +141,14 @@ function App() {
         <Route path="/forgotpassword" element={<ForgotPassword />} />
         <Route path="/otp" element={<Otp />} />
         <Route path="/newpassword" element={<NewPassword />} />
+
+        {/* The admin panel. Outside the reader's shell, deliberately: it has
+            its own navigation and is not somewhere a reader browses to. */}
+        <Route path="/admin/dashboard" element={<Dashboard />} />
+        <Route path="/admin/readers" element={<Readers />} />
+        <Route path="/admin/books" element={<Books />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin/accept-invite" element={<AdminAcceptInvite />} />
     </Routes>
   );
 

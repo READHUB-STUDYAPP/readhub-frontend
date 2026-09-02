@@ -1,11 +1,15 @@
 import React, { useRef, useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useFiles } from "../Context/FileContext";
+import { backendApi } from "../services/api";
 
 import EpubReader from "../Components/EpubReader";
 
 const ViewEpub = () => {
-  const { selectedFile2 } = useFiles();
+  const { fileId } = useParams();
+  const { selectedFile2, files, fetchBooks, setSelectedFile } = useFiles();
+  const [book, setBook] = useState(selectedFile2);
+  const [bookError, setBookError] = useState(null);
   const readerRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -26,6 +30,46 @@ const ViewEpub = () => {
   const [darkToggle, setDarkToggle] = useState(false);
   const [toggleSettings, setToggleSettings] = useState(true);
   const [scaleFont, setScaleFont] = useState(14);
+
+  useEffect(() => {
+    if (book?._id === fileId || book?.id === fileId) return;
+
+    const cachedBook = files.find((item) => String(item._id) === String(fileId));
+    if (cachedBook) {
+      setBook(cachedBook);
+      setSelectedFile(cachedBook);
+      return;
+    }
+
+    const loadBook = async () => {
+      try {
+        await fetchBooks();
+        const response = await backendApi.getBooks();
+        const loadedBook = (Array.isArray(response) ? response : response.books || [])
+          .find((item) => String(item._id) === String(fileId));
+        if (loadedBook) {
+          setBook(loadedBook);
+          setSelectedFile(loadedBook);
+        } else {
+          setBookError("The selected EPUB book could not be found.");
+        }
+      } catch (error) {
+        console.error("Unable to load EPUB book", error);
+        setBookError("Unable to load the selected EPUB book.");
+      }
+    };
+
+    loadBook();
+  }, [book, fetchBooks, fileId, files, setSelectedFile]);
+
+  if (bookError) {
+    return (
+      <div className="w-full h-dvh flex flex-col items-center justify-center gap-4">
+        <p className="text-red-500">{bookError}</p>
+        <Link to="/library" className="text-primary">Back to library</Link>
+      </div>
+    );
+  }
 
   const increaseFont = () => {
     setScaleFont((prev) => Math.min(prev + 2, 30));
@@ -185,9 +229,8 @@ const ViewEpub = () => {
       <div className="top-15 relative">
         <div className="px-4 ">
           <h2 className="text-tittle_Medium font-medium text-[14px] leading-[20px] truncate">
-            {selectedFile2.metadata?.title || selectedFile2.name}{" "}
-            {selectedFile2.metadata?.author &&
-              ` - ${selectedFile2.metadata.author}`}
+            {book?.metadata?.title || book?.title || book?.name || "Book"}{" "}
+            {book?.metadata?.author && ` - ${book.metadata.author}`}
           </h2>
           <h2 className="font-bold text-[20px] leading-[185%] pb-5">
             Page {page} of {total || "?"}
@@ -198,7 +241,7 @@ const ViewEpub = () => {
 
           <EpubReader
             ref={readerRef}
-            file={selectedFile2}
+            file={book}
             fontSize={scaleFont}
             theme={darkToggle ? "dark" : "light"}
             onLocationChange={({ current, total }) => {

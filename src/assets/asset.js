@@ -52,7 +52,23 @@ import trendingbook2 from "../assets/trendingbook2.png"
 import trendingbook3 from "../assets/trendingbook3.png"
 import playButtonIcon from "../assets/playButton.png"
 import confettiIcon from "../assets/confetti.png"
-
+import blueCircles from "../assets/blueCircles.svg"
+import blueSparkIcon from "../assets/blueFlash.svg"
+import ReadHubLogo from "../assets/ReadHubLogo.png"
+import ProperReadHubLogo from "../assets/ReadHubLogo.svg"
+import booksIconSvg from "../assets/books.svg"
+import dashboardIcon from "../assets/DashboardIcon.svg"
+import peopleIcon from "../assets/people.svg"
+import logoutSvgIcon from "../assets/logoutSvgIcon.svg"
+import dropdownSvg from "../assets/dropdownIcon.svg"
+import blankCircleSvgIcon from "../assets/blankCircle.svg"
+import searchSvgIcon from '../assets/searchIcon.svg'
+import loading1 from "../assets/loading1.svg"
+import loading2 from "../assets/loading2.svg"
+import loading3 from "../assets/loading3.svg"
+import onboardImg1 from "../assets/onboardImg1.svg"
+import onboardImg2 from "../assets/onboardImg2.svg"
+import onboardImg3 from "../assets/onboardImg3.svg"
 
 export const ReadHubImages = {
     FirstOnboardingImageIcon,
@@ -109,4 +125,21 @@ export const ReadHubImages = {
     trendingbook3,
     playButtonIcon,
     confettiIcon,
+    blueCircles,
+    blueSparkIcon,
+    ReadHubLogo,
+    ProperReadHubLogo,
+    peopleIcon,
+    dashboardIcon,
+    booksIconSvg,
+    dropdownSvg,
+    logoutSvgIcon,
+    blankCircleSvgIcon,
+    searchSvgIcon,
+    loading1,
+    loading2,
+    loading3,
+    onboardImg1,
+    onboardImg2,
+    onboardImg3,
 }

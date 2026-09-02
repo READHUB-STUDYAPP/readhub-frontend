@@ -1,150 +1,114 @@
-import axios from 'axios';
-import { baseURL, apiEndpoints } from './apiEndpoints';
+import axios from "axios";
+import { baseURL, apiEndpoints } from "./apiEndpoints";
 
 const axiosConfig = axios.create({
-  baseURL: baseURL,
-  headers: {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-  },
-  // Sends the refresh cookie. The whole session depends on this: the server
-  // keeps the refresh token in an httpOnly cookie, which JavaScript cannot read
-  // and can only pass along.
-  withCredentials: true,
+    baseURL: baseURL,
+    headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json"
+    },
+    withCredentials: true 
 });
 
-// Endpoints that carry no access token, and where a 401 means "these
-// credentials are wrong" rather than "this token has expired".
-const excludeEndpoints = [
-  'auth/login',
-  'auth/register',
-  'auth/refresh',
-  'auth/logout',
-  'auth/forget-password',
-  'auth/password-token-verification',
-  'auth/reset-password',
-  'auth/google',
-];
+// List of endpoints that do not require authorization header
+const excludeEndpoints = ["auth/login", "auth/register", "auth/refresh", "auth/logout", "auth/forget-password", "auth/password-token-verification", "auth/reset-password", "auth/google", "admin/login", "admin/invite/accept"];
 
 const isAuthEndpoint = (url) => excludeEndpoints.some((endpoint) => url?.includes(endpoint));
-
-// Request interceptor
-axiosConfig.interceptors.request.use(
-  (config) => {
-    if (!isAuthEndpoint(config.url)) {
-      const accessToken = localStorage.getItem('token');
-      if (accessToken) {
-        config.headers.Authorization = `Bearer ${accessToken}`;
-      }
-    }
-    return config;
-  },
-  (error) => Promise.reject(error),
-);
 
 /**
  * The refresh in flight, if there is one.
  *
- * Shared, so that a screen firing five requests at once when its access token
- * has just expired performs one refresh and not five. Without this the five
- * race, and four of them retry with a token that the winner has already
+ * Shared, so a screen firing several requests at once when its access token
+ * has just expired performs one refresh rather than one per request. Without
+ * it they race, and the losers retry with a token the winner has already
  * replaced.
  */
 let refreshing = null;
 
-/**
- * Asks for a new access token.
- *
- * The refresh token is not read from storage here, because on the web it is not
- * there to read: the server returns it in the response body only to the native
- * clients, and hands the browser an httpOnly cookie instead. The old code
- * required a `refreshToken` in localStorage and logged the reader out when it
- * found none -- which on the web was always -- so every expired access token
- * ended the session even though the cookie beside it would have renewed it.
- *
- * A stored token is still sent when there is one, so a native client using this
- * module keeps working.
- */
 const requestNewAccessToken = async () => {
-  // A build of this app once wrote the string "undefined" here; treat that,
-  // and "null", as the absence they were meant to be.
-  const saved = localStorage.getItem('refreshToken');
-  const stored = saved && saved !== 'undefined' && saved !== 'null' ? saved : null;
+    // The backend reads the refresh token from the httpOnly cookie, so there
+    // is nothing to send but the credentials.
+    const { data } = await axios.post(`${baseURL}${apiEndpoints.REFRESH_TOKEN}`, {}, { withCredentials: true });
 
-  const { data } = await axios.post(
-    `${baseURL}${apiEndpoints.REFRESH_TOKEN}`,
-    stored ? { refreshToken: stored } : {},
-    { withCredentials: true },
-  );
+    const accessToken = data?.accessToken;
+    if (!accessToken) throw new Error("No access token in refresh response");
 
-  const accessToken = data?.accessToken;
-  if (!accessToken) throw new Error('No access token in refresh response');
-
-  localStorage.setItem('token', accessToken);
-  return accessToken;
+    localStorage.setItem("token", accessToken);
+    return accessToken;
 };
 
-// Response interceptor
-axiosConfig.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
+// Request interceptor
+axiosConfig.interceptors.request.use((config) => {
+    const shouldSkipToken = excludeEndpoints.some((endpoint) => {
+        return config.url?.includes(endpoint)
+    });
 
-    // `error.response` is absent when the request never reached the server --
-    // offline, DNS failure, a timeout. Reading `.status` off it threw a
-    // TypeError from inside this handler, which surfaced as an unrelated error
-    // rather than the connection problem it was.
-    const status = error.response?.status;
-
-    const shouldTryRefresh =
-      status === 401 &&
-      originalRequest &&
-      !originalRequest._retry &&
-      // Never for the auth endpoints: a wrong password answers 401, and
-      // refreshing after it would be nonsense. A 401 from the refresh endpoint
-      // itself must not start another refresh either.
-      !isAuthEndpoint(originalRequest.url);
-
-    if (!shouldTryRefresh) return Promise.reject(error);
-
-    originalRequest._retry = true;
-
-    try {
-      // Whoever arrives first starts the refresh; the rest await the same one.
-      refreshing = refreshing ?? requestNewAccessToken();
-      const accessToken = await refreshing;
-
-      axiosConfig.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
-      originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-
-      return axiosConfig(originalRequest);
-    } catch (refreshError) {
-      // The session really is over: the cookie is missing, expired, or was
-      // revoked. This is the only path that signs the reader out.
-      handleLogout();
-      return Promise.reject(refreshError);
-    } finally {
-      refreshing = null;
+    if (!shouldSkipToken) {
+        const accessToken = localStorage.getItem("token");
+        if (accessToken) {
+            config.headers.Authorization = `Bearer ${accessToken}`;
+        }
     }
-  },
+    return config;
+}, (error) => {
+    return Promise.reject(error);
+});
+
+// Response interceptor
+axiosConfig.interceptors.response.use((response) => {
+        return response;
+    },
+    async (error) => {
+        const originalRequest = error.config;
+
+        // Logout and refresh failures are terminal; retrying either request
+        // through this interceptor can recursively trigger another logout.
+        if (!originalRequest || originalRequest.url?.includes(apiEndpoints.LOGOUT) || originalRequest.url?.includes(apiEndpoints.REFRESH_TOKEN)) {
+            return Promise.reject(error);
+        }
+
+        // Never for an endpoint that carries no access token: a wrong password
+        // answers 401, and refreshing after it is nonsense.
+        if (isAuthEndpoint(originalRequest.url)) {
+            return Promise.reject(error);
+        }
+
+        // Check if the error is 401 and not a retry request
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+
+            try {
+                // Whoever arrives first starts the refresh; the rest await it.
+                refreshing = refreshing ?? requestNewAccessToken();
+                const newAccessToken = await refreshing;
+
+                // Update the authorization header and retry the original request
+                axiosConfig.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+                originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+
+                return axiosConfig(originalRequest);
+            } catch (_error) {
+                // If refresh token fails, logout
+                handleLogout();
+                return Promise.reject(_error);
+            } finally {
+                refreshing = null;
+            }
+        }
+
+        return Promise.reject(error);
+    }
 );
 
 const handleLogout = () => {
-  // Tells the server to drop this device's session. Fire-and-forget: the local
-  // sign-out must not wait on the network, and it is pointless to report a
-  // failure of a call made while being signed out anyway.
-  axios
-    .post(`${baseURL}${apiEndpoints.LOGOUT}`, {}, { withCredentials: true })
-    .catch(() => {});
+    
+    axiosConfig.post(apiEndpoints.LOGOUT, {}).catch(() => {});
 
-  localStorage.removeItem('token');
-  localStorage.removeItem('refreshToken');
-
-  // Already on an auth screen: redirecting again would interrupt someone
-  // halfway through typing their password.
-  if (!isAuthEndpoint(window.location.pathname) && window.location.pathname !== '/login') {
-    window.location.href = '/login';
-  }
+    localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
+    window.location.href = window.location.pathname.startsWith('/admin')
+        ? '/admin/login'
+        : '/login';
 };
 
 export default axiosConfig;

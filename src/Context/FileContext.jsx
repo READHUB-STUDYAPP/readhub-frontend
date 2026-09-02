@@ -19,6 +19,13 @@ const debounce = (fn, delay) => {
 
 export function FileProvider({ children }) {
   const [files, setFiles] = useState([]);
+  const [bookCategories, setBookCategories] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("bookCategories") || "{}");
+    } catch {
+      return {};
+    }
+  });
   const [selectedFile2, setSelectedFile] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -212,12 +219,28 @@ export function FileProvider({ children }) {
           savedPages[book._id] = book.currentPage;
         }
       });
-      setFiles(books);
+      setFiles(books.map((book) => ({
+        ...book,
+        category: bookCategories[book._id] || book.category || "",
+      })));
       setCurrentPage((prev) => ({ ...prev, ...savedPages }));
     } catch (error) {
     } finally {
       setLoading(false);
     }
+  }, [bookCategories]);
+
+  const setBookCategory = useCallback((bookId, category) => {
+    setBookCategories((previous) => {
+      const next = { ...previous };
+      if (category) next[bookId] = category;
+      else delete next[bookId];
+      localStorage.setItem("bookCategories", JSON.stringify(next));
+      return next;
+    });
+    setFiles((previous) => previous.map((book) => (
+      book._id === bookId ? { ...book, category } : book
+    )));
   }, []);
 
   //Upload book to cloudinary and save book details to backend
@@ -226,8 +249,6 @@ export function FileProvider({ children }) {
       //Extract cover
 
       const fileURL = URL.createObjectURL(file);
-      const fileType = file.name.endsWith(".epub") ? "epub" : "pdf";
-
       const coverImage = metadata.coverImage || null;
       //Upload book file to Cloudinary
 
@@ -410,6 +431,7 @@ export function FileProvider({ children }) {
         uploadBook,
         fetchBooks,
         deleteBook,
+        setBookCategory,
         updateProgress,
         setBookShared,
         addHighlight,

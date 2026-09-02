@@ -19,7 +19,6 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 const Library = () => {
   const {
     selectFile,
-    addFile,
     files,
     getProgress,
     uploadBook,
@@ -29,6 +28,7 @@ const Library = () => {
     updateCurrentPage,
     deleteBook,
     setBookShared,
+    setBookCategory,
     loading,
   } = useFiles();
   const navigate = useNavigate();
@@ -37,6 +37,8 @@ const Library = () => {
   const [fileName, setFileName] = useState('');
 
   const [activeFilter, setActiveFilter] = useState('All books');
+  const categories = ['Fiction', 'Educational & Academic Non-Fiction', 'Self-Help & Personal Growth', 'Biography/True Stories', 'LifeStyle'];
+  const [categoryFilter, setCategoryFilter] = useState('All categories');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showCompressionInfo, setShowCompressionInfo] = useState(false);
@@ -229,96 +231,44 @@ const Library = () => {
 
   //epub handle
 
-  const handleEpub = (file) => {
+  const handleEpub = async (file) => {
     setFileType('epub');
 
     try {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const fileDataUrl = event.target.result;
+      const fileDataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error || new Error('Unable to read EPUB'));
+        reader.readAsDataURL(file);
+      });
+      const coverImage = await extractEpubCover(fileDataUrl);
+      const book = Epub(file);
+      await book.ready;
+      const metadata = await book.loaded.metadata;
+      let totalPages = 1;
+      try {
+        const locations = await book.locations.generate(1024);
+        totalPages = Math.max(1, locations.length || 1);
+      } catch {}
+      book.destroy();
 
-        // Extract cover
-        const coverImage = await extractEpubCover(fileDataUrl);
+      await uploadBook(file, {
+        title: metadata.title || file.name.replace(/\.epub$/i, ''),
+        author: metadata.creator || 'Unknown',
+        totalPages,
+        coverImage,
+      }, (pct) => setUploadProgress(Math.max(0, Math.min(100, Number(pct) || 0))));
 
-        // Extract metadata
-
-        try {
-          //convert to blob
-
-          const base64String = fileDataUrl.split(',')[1];
-          const binaryString = atob(base64String);
-          const bytes = new Uint8Array(binaryString.length);
-
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-
-          const blob = new Blob([bytes], { type: 'application/epub+zip' });
-
-          //load book temporarily to get metadata
-
-          const book = Epub(blob);
-          await book.ready;
-
-          //Get metadata
-
-          const metadata = await book.loaded.metadata;
-
-          //generate locations for total pages
-
-          let totalPages = 0;
-          try {
-            const locations = await book.locations.generate(1024);
-            totalPages = locations.length || 0;
-          } catch (err) {}
-
-          book.destroy();
-
-          const fileData = {
-            id: Date.now().toString(),
-            name: file.name,
-            type: 'epub',
-            fileData: event.target.result, //base64
-            coverImage: coverImage, // Store cover
-            currentPage: 0,
-            uploadedAt: new Date().toISOString(),
-            //Epub-Specific metadata
-            metadata: {
-              title: metadata.title || file.name,
-              author: metadata.creator || 'Unknown',
-              publisher: metadata.publisher || '',
-              language: metadata.language || '',
-
-              totalPages: totalPages,
-            },
-          };
-
-          addFile(fileData);
-          await fetchBooks();
-          setIsUploading(false);
-        } catch (metadataError) {
-          // Fallback: save without metadata
-          const fileData = {
-            id: Date.now().toString(),
-            name: file.name,
-            type: 'epub',
-            fileData: fileDataUrl,
-            coverImage: coverImage, //  Store cover
-            currentPage: 0,
-            uploadedAt: new Date().toISOString(),
-            metadata: {
-              title: file.name,
-              author: 'Unknown',
-              totalPages: 0,
-            },
-          };
-          addFile(fileData);
-          setIsUploading(false);
-        }
-      };
-      reader.readAsDataURL(file);
+      setUploadProgress(100);
+      await fetchBooks();
+      setIsUploading(false);
+      setUploadProgress(0);
     } catch (error) {
-      alert('Failed to read epub file');
+      console.error('EPUB upload failed:', error);
+      const serverMsg = error?.response?.data?.message || error?.response?.data?.error || error?.message || '';
+      alert(`Failed to upload epub file${serverMsg ? `: ${serverMsg}` : ''}`);
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -329,7 +279,7 @@ const Library = () => {
 
   const openEpub = (file) => {
     selectFile(file);
-    navigate(`/viewepub/${file.id}`);
+    navigate(`/viewepub/${file._id}`);
   };
 
   const filters = ['All books', 'Reading', 'Completed'];
@@ -357,6 +307,10 @@ const Library = () => {
           book.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           book.author?.toLowerCase().includes(searchQuery.toLowerCase()),
       );
+    }
+
+    if (categoryFilter !== 'All categories') {
+      filtered = filtered.filter((book) => book.category === categoryFilter);
     }
 
     return filtered;
@@ -521,6 +475,13 @@ const Library = () => {
         </div>
       </div>
 
+      <div className="flex gap-2 overflow-x-auto mb-6" aria-label="Filter books by category">
+        <button type="button" onClick={() => setCategoryFilter('All categories')} className={`shrink-0 px-4 py-2 rounded-full bg-white ${categoryFilter === 'All categories' ? 'text-black' : 'text-[#4B6481]'}`}>All categories</button>
+        {categories.map((category) => (
+          <button type="button" key={category} onClick={() => setCategoryFilter(category)} className={`shrink-0 px-4 py-2 rounded-full bg-white text-left ${categoryFilter === category ? 'text-black' : 'text-[#4B6481]'}`}>{category}</button>
+        ))}
+      </div>
+
       <div>
         {!isFetchingBooks && files.length > 0 ? (
           <div>
@@ -551,6 +512,9 @@ const Library = () => {
                   continueRead={page < 1 ? 'Start Reading' : 'Continue Reading'}
                   file={book}
                   coverImage={book.coverImageUrl}
+                  category={book.category}
+                  categories={categories}
+                  onCategoryChange={(category) => setBookCategory(book._id, category)}
                   onDelete={() => handleDelete(book._id)}
                   showDelete={true}
                   isPublic={Boolean(book.isPublic)}

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FiBookOpen, FiCheck, FiClock, FiPlus, FiTarget, FiUsers, FiZap } from 'react-icons/fi';
+import { IoClose, IoDownloadOutline } from 'react-icons/io5';
+import { LuSearch } from 'react-icons/lu';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
@@ -38,6 +40,51 @@ const TIPS = [
   },
 ];
 
+/**
+ * Project Gutenberg's search, as it arrived on dev.
+ *
+ * Public-domain books, searched live and downloaded straight from Gutendex.
+ * Kept as it worked, restyled to the palette so it belongs to the page it
+ * sits on.
+ */
+const getBestCoverUrl = (formats = {}) => {
+  const imageFormat = Object.entries(formats).find(([mimeType]) =>
+    mimeType.toLowerCase().includes('image/'),
+  );
+  return imageFormat ? imageFormat[1] : null;
+};
+
+const getBestDownloadUrl = (formats = {}) => {
+  const preferred = [
+    'application/pdf',
+    'application/epub+zip',
+    'text/plain',
+    'text/html',
+    'application/xhtml+xml',
+  ];
+
+  for (const mimeType of preferred) {
+    if (formats[mimeType]) return formats[mimeType];
+  }
+  return Object.values(formats)[0] || null;
+};
+
+const getDownloadFileName = (book, downloadUrl) => {
+  if (!downloadUrl) return (book.title || 'book') + '.pdf';
+
+  const lower = downloadUrl.toLowerCase();
+  const ext = lower.endsWith('.pdf')
+    ? '.pdf'
+    : lower.endsWith('.epub')
+      ? '.epub'
+      : lower.endsWith('.txt')
+        ? '.txt'
+        : '.html';
+
+  const stem = (book.title || 'book').replace(/[^a-z0-9]+/gi, '_').toLowerCase();
+  return stem + ext;
+};
+
 export default function Explore() {
   const navigate = useNavigate();
   const quote = quoteForToday();
@@ -46,6 +93,12 @@ export default function Explore() {
   const [recommended, setRecommended] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addingId, setAddingId] = useState(null);
+
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -90,6 +143,37 @@ export default function Explore() {
     }
   };
 
+  const handleSearch = async (event) => {
+    if (event) event.preventDefault();
+
+    const trimmed = searchQuery.trim();
+    if (!trimmed) {
+      setSearchResults([]);
+      setSearchError('');
+      return;
+    }
+
+    setIsSearching(true);
+    setSearchError('');
+
+    try {
+      const url =
+        'https://gutendex.com/books?search=' +
+        encodeURIComponent(trimmed) +
+        '&languages=en';
+      const response = await fetch(url);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.detail || 'Unable to fetch books.');
+
+      setSearchResults(data.results || []);
+    } catch (error) {
+      setSearchError(error.message || 'Unable to fetch books right now.');
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-1">
@@ -127,6 +211,24 @@ export default function Explore() {
           glyph={<FiBookOpen size={20} aria-hidden="true" />}
           onClick={() => navigate('/library')}
         />
+      </section>
+
+      {/* Public-domain books, searched on Project Gutenberg. */}
+      <section className="flex items-center justify-between gap-4 rounded-xl border border-line bg-surface p-4">
+        <div className="flex flex-col gap-0.5">
+          <h2 className="text-tittle_Large font-bold text-ink">Search for a book</h2>
+          <p className="text-label_Medium text-ink-soft">
+            Thousands of free, out-of-copyright books from Project Gutenberg.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsSearchModalOpen(true)}
+          aria-label="Search for books"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-wash text-brand transition-colors hover:bg-brand/15"
+        >
+          <LuSearch size={20} />
+        </button>
       </section>
 
       {/* Trending. */}
@@ -251,6 +353,110 @@ export default function Explore() {
           </ul>
         )}
       </section>
+
+      {isSearchModalOpen && (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm"
+          onClick={() => setIsSearchModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl bg-surface p-5 shadow-overlay animate-[fadeIn_160ms_ease-out]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-tittle_Large font-bold text-ink">Search books</h3>
+              <button
+                type="button"
+                onClick={() => setIsSearchModalOpen(false)}
+                aria-label="Close search"
+                className="rounded-full p-2 text-ink-faint transition-colors hover:bg-surface-variant hover:text-ink"
+              >
+                <IoClose size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSearch} className="mt-4 flex flex-col gap-4">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search by title or author"
+                className="w-full rounded-2xl border border-line bg-surface-variant px-4 py-3 text-body_Medium text-ink outline-none placeholder:text-ink-faint focus:border-brand focus:bg-surface"
+              />
+
+              <button
+                type="submit"
+                className="w-full rounded-2xl bg-brand px-4 py-2.5 text-body_Medium font-semibold text-white transition-colors hover:bg-brand-strong"
+              >
+                Search books
+              </button>
+
+              <div className="flex max-h-72 flex-col gap-3 overflow-y-auto pr-1">
+                {isSearching && (
+                  <p className="text-label_Medium text-ink-soft">Searching books...</p>
+                )}
+                {searchError && <p className="text-label_Medium text-danger">{searchError}</p>}
+
+                {!isSearching &&
+                  !searchError &&
+                  searchResults.length === 0 &&
+                  searchQuery.trim() && (
+                    <p className="text-label_Medium text-ink-soft">
+                      No books found for this search.
+                    </p>
+                  )}
+
+                {searchResults.map((book) => {
+                  const coverUrl = getBestCoverUrl(book.formats || {});
+                  const downloadUrl = getBestDownloadUrl(book.formats || {});
+
+                  return (
+                    <div
+                      key={book.id}
+                      className="flex items-center gap-3 rounded-2xl border border-line bg-surface-variant p-3"
+                    >
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-brand-wash text-center text-label_Small font-semibold text-brand">
+                        {coverUrl ? (
+                          <img
+                            src={coverUrl}
+                            alt={'Cover of ' + book.title}
+                            loading="lazy"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="line-clamp-3 px-1">{book.title}</span>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-label_Large font-semibold text-ink">
+                          {book.title}
+                        </p>
+                        <p className="mt-1 text-label_Medium text-ink-faint">
+                          {book.authors?.[0]?.name || 'Unknown author'}
+                        </p>
+                      </div>
+
+                      {downloadUrl && (
+                        <a
+                          href={downloadUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          download={getDownloadFileName(book, downloadUrl)}
+                          aria-label={'Download ' + book.title}
+                          className="rounded-full bg-surface p-2 text-brand shadow-card transition-colors hover:text-brand-strong"
+                        >
+                          <IoDownloadOutline size={18} />
+                        </a>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
