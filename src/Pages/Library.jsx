@@ -13,6 +13,7 @@ import LoadingContCard from '../Components/LoadingContCard';
 import { ReadHubImages } from '../assets/asset';
 import { toast } from 'react-toastify';
 import { discoverApi } from '../services/discover';
+import { FiSearch, FiX } from 'react-icons/fi';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -445,13 +446,35 @@ const Library = () => {
         </label>
       </div>
 
-      <div className="bg-surface h-[46px] w-full flex rounded-[11px] mb-4">
-        <img src="/Variant3.svg" alt="search" className="w-[24px] mx-4" />
+      {/*
+        The search box.
+
+        It had no `value` and no `onChange`, so `searchQuery` never changed and
+        the filter below it -- which was written and working -- never ran:
+        typing in here did nothing at all. The input also carried an inline
+        white background and did not grow, so the text sat in a narrow strip of
+        the row and the box stayed white in dark mode.
+      */}
+      <div className="mb-4 flex h-[46px] w-full items-center gap-3 rounded-[11px] border border-line bg-surface px-4 focus-within:border-brand">
+        <FiSearch size={18} className="shrink-0 text-[var(--ink-faint)]" aria-hidden="true" />
         <input
-          type="text"
-          placeholder="Search books..."
-          style={{ backgroundColor: 'white', border: '0px' }}
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Search by title or author"
+          aria-label="Search your library"
+          className="min-w-0 flex-1 bg-transparent text-body_Medium text-ink outline-none placeholder:text-[var(--ink-faint)]"
         />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            aria-label="Clear search"
+            className="shrink-0 rounded-full p-1 text-[var(--ink-faint)] transition-colors hover:bg-surface-variant hover:text-ink"
+          >
+            <FiX size={16} />
+          </button>
+        )}
       </div>
 
       <div className="flex justify-between text-body_Small font-medium mb-4">
@@ -485,7 +508,7 @@ const Library = () => {
         reading the colour.
       */}
       <div
-        className="flex gap-2 overflow-x-auto pb-1 mb-6"
+        className="no-scrollbar mb-6 flex gap-2 overflow-x-auto pb-1"
         role="group"
         aria-label="Filter books by category"
       >

@@ -251,7 +251,7 @@ export default function Explore() {
         ) : (
           /* Scrolls in its own box, so a long row never makes the page scroll
              sideways. */
-          <ul className="flex snap-x gap-6 overflow-x-auto px-1 pt-1 pb-4">
+          <ul className="no-scrollbar flex snap-x gap-6 overflow-x-auto px-1 pt-1 pb-4">
             {trending.map((book) => (
               <li
                 key={book._id}

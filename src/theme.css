@@ -232,3 +232,23 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/*
+ * A row that scrolls without showing a bar.
+ *
+ * For short horizontal strips -- the category chips, the trending row -- where
+ * the bar is thicker than the thing it scrolls and reads as a stray line
+ * across the page. Only for these: hiding the bar on a long vertical list
+ * takes away the reader's only sign of how much is left.
+ *
+ * index.css sets `scrollbar-width: thin` on everything, which is what put the
+ * bar there, so this has to say `none` rather than simply not asking.
+ */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
