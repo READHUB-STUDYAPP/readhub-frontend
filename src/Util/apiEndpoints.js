@@ -20,4 +20,29 @@ export const apiEndpoints = {
     BOOK_START_READING: "book/start",
     BOOK_END_READING: "book/end",
     BOOK_GOAL: "book/goal",
+    BOOKS: "book",
+    BOOK_BY_ID: "book",
+
+    // Reading groups. Any reader can create one; joining is done by presenting
+    // a code, which is what makes being visible to a group a choice.
+    GROUPS: "groups",
+    GROUPS_JOIN: "groups/join",
+
+    // Sharing a book to Explore, and taking a copy of somebody else's.
+    // The book id goes in the path, so these are built rather than constant.
+    DISCOVER_TRENDING: "discover/trending",
+    DISCOVER_RECOMMENDED: "discover/recommended",
+    discoverAdd: (bookId) => `discover/${bookId}/add`,
+    discoverVisibility: (bookId) => `discover/${bookId}/visibility`,
+
+    // Groups. The id and the sub-resource go in the path.
+    groupById: (groupId) => `groups/${groupId}`,
+    groupLeave: (groupId) => `groups/${groupId}/members/me`,
+    groupVisibility: (groupId) => `groups/${groupId}/visibility`,
+    groupBooks: (groupId) => `groups/${groupId}/books`,
+    groupBook: (groupId, bookId) => `groups/${groupId}/books/${bookId}`,
+    groupSchedule: (groupId) => `groups/${groupId}/schedule`,
+    groupProgress: (groupId) => `groups/${groupId}/progress`,
+    groupMessages: (groupId) => `groups/${groupId}/messages`,
+    groupMessage: (groupId, messageId) => `groups/${groupId}/messages/${messageId}`,
 };
