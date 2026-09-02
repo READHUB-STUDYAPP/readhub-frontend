@@ -67,10 +67,10 @@ export default function GoalCelebrationOverlay({
       ))}
 
       <div
-        className="absolute left-1/2 top-1/2 px-6 py-4 rounded-2xl bg-white shadow-2xl text-center"
+        className="absolute left-1/2 top-1/2 px-6 py-4 rounded-2xl bg-surface shadow-2xl text-center"
         style={{ animation: "rh_pop 0.25s ease-out both" }}
       >
-        <p className="text-lg font-semibold text-gray-900">
+        <p className="text-lg font-semibold text-ink-soft">
           congratulations you&apos;ve reached your goal
         </p>
       </div>

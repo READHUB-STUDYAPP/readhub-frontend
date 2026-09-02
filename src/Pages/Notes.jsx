@@ -116,12 +116,12 @@ const Notes = () => {
     <div>
       <div className="px-[16px] pt-[40px] overflow-hidden mb-15">
         <div className="flex justify-between mb-8 items-center">
-          <p className="text-black text-tittle_Large">Highlights & Notes</p>
+          <p className="text-ink text-tittle_Large">Highlights & Notes</p>
           <button
             onClick={() => {
               fetchNotes();
             }}
-            className="flex w-[40px] h-[40px] rounded-[8.04] bg-white justify-center items-center hover:bg-gray-100 transition-colors"
+            className="flex w-[40px] h-[40px] rounded-[8.04] bg-surface justify-center items-center hover:bg-surface-variant transition-colors"
             title="Refresh notes"
           >
             {" "}
@@ -136,7 +136,7 @@ const Notes = () => {
           </button>
         </div>
 
-        <div className="bg-white h-[46px] w-full flex rounded-[11px] mb-4">
+        <div className="bg-surface h-[46px] w-full flex rounded-[11px] mb-4">
           <img src="/Variant3.svg" alt="search" className="w-[24px] mx-4" />
           <input
             type="text"
@@ -146,27 +146,16 @@ const Notes = () => {
           />
         </div>
 
-        <div className="flex justify-between text-body_Small font-medium mb-4">
-          <div className="h-[38px] w-[171px] xsm:w-[160px] border-1 rounded-[33px] border-[#4b6481] flex justify-center items-center">
-            <img src="/Variant3c.svg" alt="icon" className="w-[24px]" />
-            <p>AI Summary</p>
-          </div>
-          <div className="h-[38px] w-[171px] xsm:w-[160px] border-1 rounded-[33px] border-[#4b6481] flex justify-center items-center">
-            <img src="/Variant3b.svg" alt="icon" className="w-[24px]" />
-            <p>Create Blog Post</p>
-          </div>
-        </div>
-
         {/* Stats cards - always show */}
         <div className="flex justify-between mb-8">
-          <div className="w-[171px] h-[72px] bg-white px-4 justify-center flex flex-col rounded-[13.96px]">
+          <div className="w-[171px] h-[72px] bg-surface px-4 justify-center flex flex-col rounded-[13.96px]">
             <p className="text-primary text-headline_Small leading-7">{totalHighlights}</p>
             <p className="text-tertiary text-body_Small">
               Total highlights
             </p>
           </div>
 
-          <div className="w-[171px] h-[72px] bg-white px-4 justify-center flex flex-col rounded-[13.96px]">
+          <div className="w-[171px] h-[72px] bg-surface px-4 justify-center flex flex-col rounded-[13.96px]">
             <p className="text-primary text-headline_Small leading-7">{totalBooks}</p>
             <p className="text-tertiary text-body_Small">Books</p>
           </div>
@@ -183,7 +172,7 @@ const Notes = () => {
 
                 return (
                   <div key={bookId}>
-                    <span className="text-black text-tittle_Medium font-semibold flex mb-3">
+                    <span className="text-ink text-tittle_Medium font-semibold flex mb-3">
                       <img src="/import_contacts.svg" alt="" />
                       <p className="ml-1">{bookTitle}</p>
                     </span>
@@ -191,11 +180,11 @@ const Notes = () => {
                     {bookNotes.map((note, index) => (
                       <div key={note._id || index}>
                         <div className="w-full bg-primary rounded-[10px] p-[2px] mb-6">
-                          <div className="bg-white rounded-[9px] p-3">
+                          <div className="bg-surface rounded-[9px] p-3">
                             <p className="text-body_Medium font-medium break-words">
                               "{note.content}"
                             </p>
-                            <p className="text-[#5f5f61] text-body_Small mt-1">
+                            <p className="text-[var(--ink-soft)] text-body_Small mt-1">
                               Page {note.page}
                             </p>
                           </div>
@@ -212,7 +201,7 @@ const Notes = () => {
             Loading notes...
           </div>
         ) : error ? (
-          <div className="flex justify-center h-100 items-center text-red-600">
+          <div className="flex justify-center h-100 items-center text-danger">
             {error}
           </div>
         ) : (

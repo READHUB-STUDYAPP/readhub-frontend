@@ -2,13 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { useFiles } from '../Context/FileContext';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useTheme } from '../Context/ThemeContext';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { useSwipeable } from 'react-swipeable';
 import axiosConfig from '../Util/axiosConfig';
 import { apiEndpoints } from '../Util/apiEndpoints';
 import CustomTextViewer from '../Components/CustomTextViewer';
 import EpubReader from '../Components/EpubReader';
 import { highlightTextInPDF } from '../Components/HighlightRenderer';
+import { toast } from 'react-toastify';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -42,10 +45,28 @@ const ViewPdf = () => {
   const [viewMode, setViewMode] = useState('pdf'); // "pdf" or "text"
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [toggleSettings, setToggleSettings] = useState(true);
 
-  const [scale, setScale] = useState(0.7);
+  /**
+   * Zoom, as a multiple of the width that fits the window.
+   *
+   * It used to be an absolute pdf.js scale fixed at 0.7, which is why the
+   * reader was hard to use on a desktop: 0.7 of a page's natural size is a
+   * postage stamp in a 1440px window and far too wide on a phone. 1 now means
+   * "fits the reader", whatever the window, and the buttons multiply it.
+   */
+  const [scale, setScale] = useState(1);
+
+  /**
+   * How wide the page may be drawn.
+   *
+   * Measured from the element the page sits in, and re-measured when the window
+   * changes, so the fit holds when a browser is resized or a phone is turned.
+   */
+  const pageAreaRef = useRef(null);
+  const [pageArea, setPageArea] = useState(0);
   const [scaleFont, setScaleFont] = useState(16);
 
   // Track if we've initiated a fetch
@@ -334,14 +355,28 @@ const ViewPdf = () => {
         const range = selection.getRangeAt(0);
         const rect = range.getBoundingClientRect();
 
-        // Calculate position relative to viewport and adjust for viewport
-        let top = rect.top + window.scrollY - 60; // 60px above selection
+        /*
+          Viewport coordinates, with no scroll offset added.
+
+          The popup is positioned `fixed`, which is already relative to the
+          viewport, so the `window.scrollY` this used to add pushed it that many
+          pixels down the screen -- far enough into a long book that the buttons
+          were off the bottom entirely and a highlight could not be saved.
+
+          `getBoundingClientRect` is viewport-relative, which is exactly what
+          `fixed` wants.
+        */
+        const POPUP_HEIGHT = 56;
+        let top = rect.top - POPUP_HEIGHT;
         let left = rect.left + rect.width / 2;
 
-        // Ensure popup doesn't go off-screen
-        if (top < 10) {
-          top = rect.bottom + window.scrollY + 10; // Position below if not enough space above
-        }
+        // Below the selection when there is no room above it.
+        if (top < 10) top = rect.bottom + 10;
+
+        // Kept clear of both edges, so a passage selected at the margin does
+        // not put half the popup off-screen.
+        const MARGIN = 92;
+        left = Math.min(Math.max(left, MARGIN), window.innerWidth - MARGIN);
 
         setPopupPosition({
           x: left,
@@ -384,6 +419,23 @@ const ViewPdf = () => {
     }
   };
 
+  useEffect(() => {
+    const element = pageAreaRef.current;
+    if (!element) return;
+
+    const measure = () => setPageArea(element.clientWidth);
+    measure();
+
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', measure);
+      return () => window.removeEventListener('resize', measure);
+    }
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
   const goToPrevPage = () => {
     const newPage = Math.max(1, (currentPage[fileId] || 1) - 1);
     updateCurrentPage(fileId, newPage);
@@ -398,6 +450,61 @@ const ViewPdf = () => {
     updateCurrentPage(fileId, page);
     setToggleSettings(!toggleSettings);
   };
+
+  /**
+   * Keyboard navigation.
+   *
+   * The web app was navigable by swipe alone, which is nothing on a desktop
+   * where there is no touchscreen and both hands are already on the keyboard.
+   * Arrows and page keys turn pages; Home and End jump to the ends.
+   *
+   * Refused while typing, and while text is selected -- a reader who has just
+   * highlighted a passage is reaching for the popup, not the next page, and
+   * arrow keys move a selection.
+   */
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      const target = event.target;
+      const typing =
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+
+      if (typing || event.metaKey || event.ctrlKey || event.altKey) return;
+
+      const selection = window.getSelection();
+      if (selection && !selection.isCollapsed) return;
+
+      switch (event.key) {
+        case 'ArrowRight':
+        case 'PageDown':
+          event.preventDefault();
+          goToNextPage();
+          break;
+        case 'ArrowLeft':
+        case 'PageUp':
+          event.preventDefault();
+          goToPrevPage();
+          break;
+        case 'Home':
+          event.preventDefault();
+          updateCurrentPage(fileId, 1);
+          break;
+        case 'End':
+          if (numPages) {
+            event.preventDefault();
+            updateCurrentPage(fileId, numPages);
+          }
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileId, numPages, currentPage]);
 
   // Swipe-------------------------------------//
   const swipeHandlers = useSwipeable({
@@ -435,19 +542,40 @@ const ViewPdf = () => {
     },
 
     preventScrollOnSwipe: true,
-    trackMouse: true,
+    /*
+      Touch only.
+
+      With `trackMouse` on, dragging across a paragraph to select it was read as
+      a swipe, so highlighting with a mouse turned the page instead -- which is
+      why highlighting appeared not to work on a desktop at all. A mouse has the
+      arrows, the keyboard and the scroll wheel for navigation and needs drag
+      for selection.
+    */
+    trackMouse: false,
     delta: 140,
   });
 
   /*------Dark toggle, Zoom and font Increase----*/
-  const [darkToggle, setDarkToggle] = useState(false);
+  /*
+    The reader opens in the theme the app is in.
+
+    It used to always open light, so a reader who had chosen dark got a white
+    page in the face every time they opened a book. The in-reader switch is
+    still an override -- paper colour is a reading decision, and someone may
+    want a light page inside a dark app -- it just no longer starts by
+    contradicting the setting.
+  */
+  const { isDark } = useTheme();
+  const [darkToggle, setDarkToggle] = useState(isDark);
 
   const zoomIn = () => {
     setScale((prev) => Math.min(Math.round((prev + 0.2) * 10) / 10, 3));
   };
 
   const zoomOut = () => {
-    setScale((prev) => Math.max(Math.round((prev - 0.2) * 10) / 10, 0.7));
+    // 0.5 rather than 0.7: with 1 meaning "fits the window", a reader on a
+    // wide screen may legitimately want the page smaller than the fit.
+    setScale((prev) => Math.max(Math.round((prev - 0.2) * 10) / 10, 0.5));
   };
 
   const increaseFont = () => {
@@ -461,7 +589,7 @@ const ViewPdf = () => {
   const handleHighlight = () => {
     // Validate text is not empty or whitespace-only
     if (!selectedText || selectedText.trim().length === 0 || !activeFileId) {
-      alert('Please select some text first');
+      toast.info('Select some text first.');
       return;
     }
 
@@ -514,11 +642,13 @@ const ViewPdf = () => {
   const handleSaveNote = async () => {
     // Validate text is not empty or whitespace-only
     if (!selectedText || selectedText.trim().length === 0 || !activeFileId) {
-      alert('Please select some text first');
+      toast.info('Select some text first.');
       return;
     }
 
     setSaving(true);
+    let synced = false;
+    let reason = null;
     try {
       // Fallback: attempt to recapture offsets (may be null if selection was cleared)
       let offsets = null;
@@ -551,25 +681,40 @@ const ViewPdf = () => {
 
       // Also save to backend API using the current book id
       if (activeFileId) {
+        /*
+          The highlight travels with the note.
+
+          Without it the server stored the words and forgot they were a
+          highlight, so a passage marked on this browser came back as a plain
+          note everywhere else -- unpainted in the reader, and impossible to
+          find in the page again. The offsets are sent when the selection gave
+          us a pair, and `text` is the anchor when it did not.
+        */
+        const marks = selectedOffsets || offsets;
+        const hasOffsets =
+          Number.isInteger(marks?.startOffset) && Number.isInteger(marks?.endOffset);
+
         const payload = {
           bookId: activeFileId,
           content: selectedText.trim(),
           pageNumber: pageNumber,
+          highlight: {
+            text: selectedText.trim(),
+            color: 'yellow',
+            ...(hasOffsets
+              ? { startOffset: marks.startOffset, endOffset: marks.endOffset }
+              : {}),
+          },
         };
 
-        console.log('Saving note to backend with:', payload, {
-          bookTitle: activeFileTitle,
-        });
-
         try {
-          const response = await axiosConfig.post(apiEndpoints.NOTES, payload);
-          console.log('Note saved to backend successfully:', response.data);
+          await axiosConfig.post(apiEndpoints.NOTES, payload);
+          synced = true;
         } catch (backendError) {
-          console.warn(
-            'Failed to save to backend, but highlight saved locally:',
-            backendError.response?.data?.message || backendError.message,
-          );
-          // Continue - the note is already saved locally
+          // Kept, not discarded: the highlight is painted in this browser
+          // either way. But it is not on the reader's other devices, and
+          // saying "saved" would be a lie they only discover on their phone.
+          reason = backendError.response?.data?.message || backendError.message;
         }
       }
 
@@ -577,26 +722,38 @@ const ViewPdf = () => {
       setSelectedText('');
       setSelectedOffsets(null);
       setSelectedTextRange(null);
-      alert('Note saved successfully!');
+
+      if (synced) {
+        toast.success('Saved to your notes.');
+      } else {
+        toast.warning(`Highlighted here, but not saved to your notes. ${reason ?? ''}`.trim());
+      }
 
       // Clear browser selection
       window.getSelection().removeAllRanges();
     } catch (error) {
       console.error('Error saving note:', error);
-      alert(`Failed to save note: ${error.message}`);
+      toast.error(`Could not save the note. ${error.message}`);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleAISummary = () => {
-    // Placeholder for AI Summary functionality
-    alert('AI Summary feature coming soon!');
-    setShowPopup(false);
-    setSelectedText('');
-    setSelectedOffsets(null);
-    setSelectedTextRange(null);
-    window.getSelection().removeAllRanges();
+  /**
+   * Leaves the book for wherever the reader came from.
+   *
+   * This was a link to the library, so opening a group's book and closing it
+   * again dropped the reader in their own library with the group -- and the
+   * conversation they were reading it for -- three taps away.
+   *
+   * `key` is React Router's marker for the first entry in this session's
+   * history: on that entry there is nothing behind us, so going back would
+   * leave the app entirely. The library is the right fallback there, since it
+   * is where a book opened from a cold link belongs.
+   */
+  const goBack = () => {
+    if (location.key !== 'default') navigate(-1);
+    else navigate('/library');
   };
 
   const handleScrollDirection = (direction) => {
@@ -607,11 +764,14 @@ const ViewPdf = () => {
   if (!selectedFile2) {
     return (
       <div className=" w-full h-full">
-        <Link to="/library">
-          <button className="flex items-center gap-1 mb-4">
-            <img src="/chevron-left.svg" />
-          </button>
-        </Link>
+        <button
+          type="button"
+          onClick={goBack}
+          aria-label="Go back"
+          className="flex items-center gap-1 mb-4"
+        >
+          <img src="/chevron-left.svg" alt="" />
+        </button>
         No file selected
       </div>
     );
@@ -619,14 +779,14 @@ const ViewPdf = () => {
   return (
     <>
       <div
-        className={`w-full overscroll-contain h-dvh bg-fixed overflow-scroll ${darkToggle ? 'bg-[#0B111E] text-[#ECF0F8]' : 'bg-white text-[black]'}`}
+        className={`h-dvh w-full overflow-y-auto ${darkToggle ? 'bg-[#0B111E] text-[#ECF0F8]' : 'bg-white text-[black]'}`}
       >
         <div
           className={`flex justify-between p-4 w-full fixed z-10 items-center ${darkToggle ? 'bg-[#0B111E] stroke-primary' : 'bg-white stroke-[#1A1A1A]'}`}
         >
           <div className="flex items-center">
-            <Link to="/library">
-              <button className="flex items-center gap-1">
+            <button type="button" onClick={goBack} aria-label="Close the book">
+              <div className="flex items-center gap-1">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
@@ -641,8 +801,8 @@ const ViewPdf = () => {
                     stroke-linejoin="round"
                   />
                 </svg>
-              </button>
-            </Link>
+              </div>
+            </button>
           </div>
 
           <div className="flex gap-6">
@@ -753,9 +913,9 @@ const ViewPdf = () => {
         </div>
         {(selectedFile2 && fileId) || !hasFetched ? (
           <div
-            className={`w-full overscroll-contain h-dvh bg-fixed overflow-scroll ${darkToggle ? 'bg-[#0B111E] text-[#ECF0F8]' : 'bg-white text-[black]'}`}
+            className={`h-dvh w-full overflow-y-auto ${darkToggle ? 'bg-[#0B111E] text-[#ECF0F8]' : 'bg-white text-[black]'}`}
           >
-            <div className="top-15 relative overflow-scroll overscroll-contain">
+            <div className="top-15 relative">
               <div className="px-4 ">
                 <h2 className="text-tittle_Medium font-medium text-[14px] leading-[20px] truncate">
                   {activeFileTitle}
@@ -764,22 +924,66 @@ const ViewPdf = () => {
                   Page {pageNumber} of {numPages}
                 </h2>
               </div>
-              <div className="overflow-scroll overscroll-contain">
+              <div>
                 {/* Toggle between PDF and Text view */}
 
                 {viewMode === 'pdf' ? (
                   <div
-                    className="flex justify-center items-center h-full"
+                    ref={pageAreaRef}
+                    className="relative flex w-full justify-center py-4"
                     onMouseUpCapture={handleTextSelection}
                     onTouchEndCapture={handleTextSelection}
                     {...swipeHandlers}
                   >
+                    {/*
+                      Page arrows, for a desktop.
+                      Shown only where there is a real pointer -- a phone turns
+                      pages by swiping, and two buttons floating over a small
+                      screen would cover the words being read. `hover: hover`
+                      is the query that asks that question, rather than
+                      guessing from width: a touchscreen laptop is wide and
+                      still wants the arrows, a large phone is not.
+
+                      Disabled at the ends rather than hidden, so the controls
+                      do not move about as a reader works through a book.
+                    */}
+                    <button
+                      type="button"
+                      onClick={goToPrevPage}
+                      disabled={pageNumber <= 1}
+                      aria-label="Previous page"
+                      className={`fixed left-3 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border shadow-raised transition-opacity [@media(hover:hover)]:flex ${
+                        darkToggle
+                          ? 'border-white/15 bg-[#131C2E] text-white'
+                          : 'border-black/10 bg-white text-[#0F172A]'
+                      } ${pageNumber <= 1 ? 'cursor-not-allowed opacity-30' : 'hover:opacity-90'}`}
+                    >
+                      <FiChevronLeft size={22} />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={goToNextPage}
+                      disabled={!numPages || pageNumber >= numPages}
+                      aria-label="Next page"
+                      className={`fixed right-3 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border shadow-raised transition-opacity [@media(hover:hover)]:flex ${
+                        darkToggle
+                          ? 'border-white/15 bg-[#131C2E] text-white'
+                          : 'border-black/10 bg-white text-[#0F172A]'
+                      } ${
+                        !numPages || pageNumber >= numPages
+                          ? 'cursor-not-allowed opacity-30'
+                          : 'hover:opacity-90'
+                      }`}
+                    >
+                      <FiChevronRight size={22} />
+                    </button>
                     <Document
                       file={activeFile?.fileUrl}
                       onLoadSuccess={onDocumentLoadSuccess}
                       loading={
                         <div>
-                          <div className="relative overflow-scroll overscroll-contain w-screen px-4">
+                          <div className="relative w-full px-4">
                             <div className="mt-5">
                               <div className="w-7/8 h-[18px] bg-[#E6E6E6] rounded-[3px] mb-2 animate-pulse"></div>
                               <div className="w-full h-[18px] bg-[#E6E6E6] rounded-[3px] mb-2 animate-pulse"></div>
@@ -823,14 +1027,25 @@ const ViewPdf = () => {
                         </div>
                       }
                       error={<div>Failed to load PDF.</div>}
-                      className={`overflow-scroll flex`}
+                      className={`flex overflow-auto`}
                     >
+                      {/*
+                        `width` rather than `scale`, so the page is drawn to fit
+                        the reader and zoom multiplies that. The fallback of 640
+                        covers the first render, before the element has been
+                        measured.
+
+                        The device pixel ratio is capped at 2: the cost of a
+                        render is the area of the canvas, and a phone reporting
+                        3 asks for 2.25 times the pixels for sharpness nobody
+                        can see at reading distance.
+                      */}
                       <Page
                         pageNumber={pageNumber}
                         renderAnnotationLayer={false}
                         renderTextLayer={true}
-                        scale={scale}
-                        devicePixelRatio={window.devicePixelRatio}
+                        width={Math.max(280, Math.round(((pageArea || 640) - 24) * scale))}
+                        devicePixelRatio={Math.min(window.devicePixelRatio || 1, 2)}
                       />
                     </Document>
                   </div>
@@ -860,7 +1075,7 @@ const ViewPdf = () => {
                     minWidth: 'fit-content',
                   }}
                 >
-                  <div className="grid grid-cols-3 gap-2 p-2 rounded-[14px] shadow-xl border border-[#DDE8FF] bg-white/95 backdrop-blur">
+                  <div className="grid grid-cols-2 gap-2 p-2 rounded-[14px] shadow-xl border border-[#DDE8FF] bg-white/95 backdrop-blur">
                     <button
                       onClick={handleHighlight}
                       className="w-full text-center rounded-[12px] bg-primary text-white px-3 py-2 text-xs font-semibold hover:bg-[#0653C6] transition-colors"
@@ -875,13 +1090,6 @@ const ViewPdf = () => {
                       title="Save note to your library"
                     >
                       {saving ? 'Saving...' : 'Save'}
-                    </button>
-                    <button
-                      onClick={handleAISummary}
-                      className="w-full text-center rounded-[12px] bg-primary text-white px-3 py-2 text-xs font-semibold hover:bg-[#0653C6] transition-colors"
-                      title="Get AI summary of selected text"
-                    >
-                      AI Summary
                     </button>
                   </div>
                 </div>
@@ -904,10 +1112,32 @@ const ViewPdf = () => {
             </div>
 
             <div
-              className={`bg-black/20 w-dvw h-dvh fixed z-11 flex items-baseline-last transition-all duration-300 ${toggleSettings ? 'top-[100vh]' : 'top-0'}`}
+              /*
+                A sheet in portrait, a side panel in landscape.
+
+                It was a 65vh sheet at the bottom whatever the screen. Turn a
+                phone sideways to read a page at a sensible width and 65% of the
+                height is nearly all of it -- the settings covered the book. In
+                landscape it comes in from the right instead, over a strip of
+                the page rather than the page itself.
+
+                The backdrop closes it, which it did not before: the only way
+                out was the small cross in the corner, and on a covered screen
+                the natural move is to tap the part you can still see.
+              */
+              onClick={() => setToggleSettings(true)}
+              className={`fixed inset-0 z-11 flex items-end bg-black/20 transition-opacity duration-300 landscape:items-stretch landscape:justify-end ${
+                toggleSettings ? 'pointer-events-none opacity-0' : 'opacity-100'
+              }`}
             >
               <div
-                className={`w-dvw h-[65vh] relative rounded-t-[32px] p-[24px] flex flex-col gap-6  ${darkToggle ? 'bg-[#011532]' : 'bg-white'}`}
+                // Stops a tap inside the panel from closing it on the way out.
+                onClick={(event) => event.stopPropagation()}
+                className={`relative flex w-dvw max-h-[65vh] flex-col gap-6 overflow-y-auto rounded-t-[32px] p-[24px] transition-transform duration-300 landscape:h-dvh landscape:max-h-none landscape:w-[380px] landscape:max-w-[85vw] landscape:rounded-t-none landscape:rounded-l-[32px] landscape:translate-y-0 ${
+                  toggleSettings
+                    ? 'translate-y-full landscape:translate-x-full'
+                    : 'translate-y-0 landscape:translate-x-0'
+                } ${darkToggle ? 'bg-[#011532]' : 'bg-white'}`}
               >
                 <div
                   className={`flex  justify-between ${darkToggle ? 'text-[#F5F9FF] stroke-[#F5F9FF]' : 'text-[#333333] stroke-[#333333]'}`}
@@ -947,7 +1177,7 @@ const ViewPdf = () => {
                             <p className="pl-2">Zoom Size</p>
                           </span>
 
-                          <p>{scale}</p>
+                          <p>{`${Math.round(scale * 100)}%`}</p>
                         </div>
 
                         <div
@@ -1096,7 +1326,7 @@ const ViewPdf = () => {
           </div>
         ) : (
           <div>
-            <div className="top-15 relative overflow-scroll overscroll-contain px-4">
+            <div className="top-15 relative px-4">
               <div>
                 <div className="w-[170px] h-[18px] bg-[#E6E6E6] rounded-[3px] mb-2 animate-pulse"></div>
                 <div className="w-[300px] h-[30px] bg-[#E6E6E6] rounded-[3px] mb-2 animate-pulse"></div>

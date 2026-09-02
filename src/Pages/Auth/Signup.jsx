@@ -6,14 +6,15 @@ import { LuEye, LuEyeOff, LuLoaderCircle } from "react-icons/lu";
 
 import { validateEmail } from "./validate";
 import { ReadHubImages } from "../../assets/asset";
+import AuthLayout, { AuthButton, AuthField, AuthProviders } from "../../Components/AuthLayout";
 import axiosConfig from "../../Util/axiosConfig";
+import { authInputClass } from "../../Util/authStyles";
 import { apiEndpoints } from "../../Util/apiEndpoints";
-import "../Auth/Signup.css";
+import { storeSession } from "../../Util/session";
 
 const Signup = () => {
   const navigate = useNavigate();
 
-  const [isCreateAccount, setIsCreateAccount] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -77,8 +78,7 @@ const Signup = () => {
       });
       if (response.status === 200) {
         toast.success("Logged in successfully.");
-        localStorage.setItem("token", response.data.accessToken);
-        localStorage.setItem("refreshToken", response.data.refreshToken);
+        storeSession(response.data);
         navigate("/home");
       }
     } catch (err) {
@@ -99,190 +99,125 @@ const Signup = () => {
   };
 
   return (
-    <>
-      <div className="signup">
-        <div className="signupContent">
-          <div className="header">
-            <span className="heading">Create an Account</span>
-            <span className="subheading">
-              Signup to start reading instantly
-            </span>
+    <AuthLayout title="Create an account" subtitle="Sign up to start reading today">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <AuthField label="Username">
+          <input
+            type="text"
+            id="username"
+            autoComplete="username"
+            placeholder="Your name"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className={authInputClass(false)}
+          />
+        </AuthField>
+
+        <AuthField label="Email">
+          <input
+            type="email"
+            id="email"
+            autoComplete="email"
+            placeholder="example@gmail.com"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={authInputClass(false)}
+          />
+        </AuthField>
+
+        <AuthField label="Password" hint="At least 8 characters">
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              id="password"
+              autoComplete="new-password"
+              placeholder="********"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={`${authInputClass(false)} pr-12`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((shown) => !shown)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint transition-colors hover:text-ink"
+            >
+              {showPassword ? <LuEyeOff size={18} /> : <LuEye size={18} />}
+            </button>
           </div>
+        </AuthField>
 
-          <form className="signupForm" onSubmit={handleSubmit}>
-            <div className="inputFields">
-              <div className="field">
-                <label htmlFor="">Username</label>
-                <input
-                  type="text"
-                  id="name"
-                  className="form-control"
-                  placeholder="Johnny D"
-                  required
-                  onChange={(e) => setName(e.target.value)}
-                  value={name}
-                />
-              </div>
+        {/* The mismatch is shown on this field rather than the first: it is the
+            one to correct, and the reader is looking at it. */}
+        <AuthField
+          label="Confirm Password"
+          error={confirmPassword && password !== confirmPassword ? "Passwords do not match" : ""}
+        >
+          <div className="relative">
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              id="confirmPassword"
+              autoComplete="new-password"
+              placeholder="********"
+              required
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className={`${authInputClass(Boolean(confirmPassword) && password !== confirmPassword)} pr-12`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword((shown) => !shown)}
+              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint transition-colors hover:text-ink"
+            >
+              {showConfirmPassword ? <LuEyeOff size={18} /> : <LuEye size={18} />}
+            </button>
+          </div>
+        </AuthField>
 
-              <div className="field">
-                <label htmlFor="">Email</label>
-                <input
-                  type="text"
-                  id="email"
-                  className="form-control"
-                  placeholder="example@gmail.com"
-                  required
-                  onChange={(e) => setEmail(e.target.value)}
-                  value={email}
-                />
-              </div>
+        {error && <p className="text-label_Medium text-danger">{error}</p>}
 
-              <div className="field">
-                <label htmlFor="">Password</label>
-                <div style={{ position: "relative", width: "100%" }}>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    id="password"
-                    className="form-control"
-                    placeholder="********"
-                    required
-                    onChange={(e) => setPassword(e.target.value)}
-                    value={password}
-                    style={{ paddingRight: "44px" }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((s) => !s)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    style={{
-                      position: "absolute",
-                      right: "12px",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      background: "transparent",
-                      border: "none",
-                      padding: 0,
-                      cursor: "pointer",
-                      color: "#4d4d4d",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {showPassword ? <LuEyeOff size={18} /> : <LuEye size={18} />}
-                  </button>
-                </div>
-              </div>
+        <AuthButton loading={loading}>
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <LuLoaderCircle className="h-4 w-4 animate-spin" />
+              Creating account...
+            </span>
+          ) : (
+            "Create Account"
+          )}
+        </AuthButton>
 
-              <div className="field">
-                <label htmlFor="">Confirm Password</label>
-                <div style={{ position: "relative", width: "100%" }}>
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    id="confirmPassword"
-                    className="form-control"
-                    placeholder="********"
-                    required
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    value={confirmPassword}
-                    style={{ paddingRight: "44px" }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword((s) => !s)}
-                    aria-label={
-                      showConfirmPassword ? "Hide password" : "Show password"
-                    }
-                    style={{
-                      position: "absolute",
-                      right: "12px",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      background: "transparent",
-                      border: "none",
-                      padding: 0,
-                      cursor: "pointer",
-                      color: "#4d4d4d",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {showConfirmPassword ? (
-                      <LuEyeOff size={18} />
-                    ) : (
-                      <LuEye size={18} />
-                    )}
-                  </button>
-                </div>
-              </div>
+        <AuthProviders>
+          {/* The SDK draws this button inside an iframe, so its corners cannot
+              be styled from here -- `shape="pill"` is how it is asked for, and
+              it matches the rounded actions on the rest of the page. */}
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            shape="pill"
+            size="large"
+            text="signup_with"
+            width="280"
+            logo_alignment="center"
+          />
+        </AuthProviders>
 
-              {error && (
-                <p
-                  className="errorText"
-                  style={{
-                    color: "red",
-                    alignItems: "center",
-                    backgroundColor: "transparent",
-                  }}
-                >
-                  {error}
-                </p>
-              )}
-
-              <button
-                disabled={loading}
-                className={`btn-primary bg-blue-400 rounded-lg w-full py-3 text-white text-lg font-medium flex items-center justify-center gap-2 submitButton ${
-                  loading ? "opacity-60 cursor-not-allowed" : ""
-                }`}
-                type="submit"
-              >
-                {loading ? (
-                  <>
-                    <LuLoaderCircle className="animate-spin w-5 h-5" />
-                    Creating...
-                  </>
-                ) : (
-                  "Create Account"
-                )}
-              </button>
-
-              <div className="separator">
-                <hr className="short-line" />
-                <span>Or continue with</span>
-                <hr className="short-line" />
-              </div>
-
-              <div className="icons">
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={handleGoogleError}
-                />
-                <span>
-                  <img
-                    className="googleImg"
-                    src={ReadHubImages.AppleIcon}
-                    alt="Apple login"
-                  />
-                </span>
-              </div>
-
-              <div className="loginOption">
-                <span style={{ color: "#4d4d4d" }}>
-                  Already have an account?
-                </span>
-                <span
-                  onClick={() => navigate("/login")}
-                  style={{ color: "#2D7FF9" }}
-                >
-                  Sign In
-                </span>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-    </>
+        <p className="text-center text-body_Medium text-ink-soft">
+          Already have an account?{" "}
+          <button
+            type="button"
+            onClick={() => navigate("/login")}
+            className="font-bold text-brand hover:underline"
+          >
+            Sign in
+          </button>
+        </p>
+      </form>
+    </AuthLayout>
   );
 };
 
