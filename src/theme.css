@@ -1,0 +1,234 @@
+/*
+ * The design system, ported from the mobile app.
+ *
+ * One product, one identity: the same brand blue, the same Manrope type scale,
+ * the same spacing and radius steps as `src/shared/theme` in readhub-mobile.
+ * A visual decision is made once and applied in both places.
+ *
+ * Two layers, deliberately:
+ *
+ *   :root / [data-theme]  the palette, as plain custom properties. This is the
+ *                         layer that changes between light and dark.
+ *   @theme                Tailwind's tokens, pointing at those properties. This
+ *                         is what generates `bg-surface`, `text-ink` and the
+ *                         rest, and it never changes between themes.
+ *
+ * Components use the semantic names -- surface, ink, border -- and never a raw
+ * hex, so a theme swap is a change to the first layer alone.
+ */
+
+/* ---------------------------------------------------------------- palette */
+
+:root {
+  /* Brand. The same blue the app icon and the mobile primary use. */
+  --brand-50: #eff6ff;
+  --brand-100: #e6f0fe;
+  --brand-500: #2d7ff9;
+  --brand-600: #1b66c9;
+  --brand-700: #1751a1;
+
+  /* Neutrals, biased very slightly blue so they sit with the brand rather
+     than beside it. A pure grey next to this blue reads as dirty. */
+  --grey-0: #ffffff;
+  --grey-25: #fbfcfe;
+  --grey-50: #f5f7fa;
+  --grey-100: #eef1f6;
+  --grey-200: #e3e8f0;
+  --grey-300: #cbd4e1;
+  --grey-500: #6b7a90;
+  --grey-600: #4b6481;
+  --grey-800: #24314a;
+  --grey-900: #0f172a;
+  --grey-950: #0b111e;
+
+  /* Semantic, for state rather than brand. */
+  --green-500: #12b76a;
+  --amber-500: #f5a623;
+  --red-500: #ef4444;
+}
+
+/* Light is the default, and is also what an unrecognised value falls back to. */
+:root,
+:root[data-theme='light'] {
+  --page: var(--grey-50);
+  --surface: var(--grey-0);
+  --surface-variant: var(--grey-100);
+  --surface-sunk: var(--grey-25);
+
+  --ink: var(--grey-900);
+  --ink-soft: var(--grey-600);
+  --ink-faint: var(--grey-500);
+  --ink-on-brand: #ffffff;
+
+  --border: var(--grey-200);
+  --border-strong: var(--grey-300);
+
+  --brand: var(--brand-500);
+  --brand-strong: var(--brand-600);
+  --brand-wash: var(--brand-100);
+
+  --success: var(--green-500);
+  --warning: var(--amber-500);
+  --danger: var(--red-500);
+
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.05);
+  --shadow-raised: 0 4px 12px rgb(15 23 42 / 0.1);
+  --shadow-overlay: 0 8px 24px rgb(15 23 42 / 0.18);
+}
+
+/*
+ * Dark, keyed off an attribute rather than the media query.
+ *
+ * The app writes `data-theme` itself, resolving "system" against
+ * `prefers-color-scheme` in JavaScript. That is what makes three states
+ * possible -- system, light, dark -- where the media query alone gives two and
+ * no way for a reader to override their operating system.
+ *
+ * Not a naive inversion: the brand lightens so it stays legible on a dark
+ * ground, and text on the brand goes near-black rather than white.
+ */
+:root[data-theme='dark'] {
+  --page: var(--grey-950);
+  --surface: #131c2e;
+  --surface-variant: #1b2740;
+  --surface-sunk: #101827;
+
+  --ink: #e8edf7;
+  --ink-soft: #a3afc6;
+  --ink-faint: #74809a;
+  --ink-on-brand: #06162e;
+
+  --border: var(--grey-800);
+  --border-strong: #2f3f5c;
+
+  --brand: #6ba5ff;
+  --brand-strong: #8fbcff;
+  --brand-wash: #16233a;
+
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+
+  /* Deeper, because a shadow on a dark ground has to work harder to read. */
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-raised: 0 4px 12px rgb(0 0 0 / 0.45);
+  --shadow-overlay: 0 8px 24px rgb(0 0 0 / 0.55);
+}
+
+/* ---------------------------------------------------------- tailwind tokens */
+
+@theme inline {
+  /* Semantic colours. These are the names components should use. */
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-variant: var(--surface-variant);
+  --color-surface-sunk: var(--surface-sunk);
+
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-ink-on-brand: var(--ink-on-brand);
+
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-wash: var(--brand-wash);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  /*
+   * No named spacing tokens, deliberately.
+   *
+   * Naming them `sm`, `md`, `lg` looked tidy and broke the `max-w-*` scale:
+   * Tailwind resolves `max-w-sm` from the spacing namespace, so declaring
+   * `--spacing-sm: 8px` turned `max-w-sm` into an 8px cap and wrapped every
+   * paragraph one word per line.
+   *
+   * Tailwind's numeric scale is already the same 4-point grid the mobile app
+   * uses -- p-1/2/4/6/8/12 are its xs/sm/md/lg/xl/2xl -- so there was nothing
+   * to gain by renaming it.
+   */
+
+  /* Radius, matching the mobile scale. */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Shadows. */
+  --shadow-card: var(--shadow-card);
+  --shadow-raised: var(--shadow-raised);
+  --shadow-overlay: var(--shadow-overlay);
+
+  /* Motion, so transitions across the app feel related. */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/*
+ * Dark as an attribute variant.
+ *
+ * Replaces Tailwind's default `prefers-color-scheme` behaviour, so `dark:`
+ * follows the app's own setting -- including a reader who has chosen dark on a
+ * light operating system.
+ */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/* ---------------------------------------------------------------- keyframes */
+
+/*
+ * Referenced by `animate-[fadeIn_...]`. Tailwind has no such keyframe of its
+ * own, so utilities naming it were animating nothing.
+ *
+ * Fill mode is `both`, so the element holds the opening frame until the
+ * animation starts -- without it there is a flash of the finished state first.
+ */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --------------------------------------------------------------- elements */
+
+html {
+  /* Tells form controls, scrollbars and the browser's own UI which way round
+     this page is, so a dark page does not get a white scrollbar. */
+  color-scheme: light;
+  background-color: var(--page);
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--page);
+  color: var(--ink);
+}
+
+/* Visible focus, on both themes. Removing outlines without replacing them is
+   how a keyboard becomes unusable. */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
