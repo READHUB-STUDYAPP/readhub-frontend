@@ -1,4 +1,5 @@
 import React from "react";
+import { FiGlobe, FiLock, FiTrash2 } from "react-icons/fi";
 import { useFiles } from "../Context/FileContext";
 
 const ContCard = ({
@@ -14,77 +15,113 @@ const ContCard = ({
   coverImage,
   onDelete,
   showDelete = false,
+  isPublic = false,
+  onToggleShare,
+  isSharing = false,
 }) => {
   const validProgress = Math.min(100, Math.max(0, progress));
 
   return (
     <div
-      className={`bg-white px-[16px] py-2 rounded-[10px] mb-8 ${hideNotStarted}`}
+      className={`bg-surface p-4 rounded-[10px] mb-8 ${hideNotStarted}`}
     >
-      <div className="flex justify-between mb-2">
-        <div className="h-[136px] flex w-[110px] rounded-[10px] bg-primary justify-center max-xsm:w-[100px] max-xsm:h-[120px] overflow-hidden">
+      <div className="flex gap-4 mb-4">
+        <div className="h-[136px] w-[110px] shrink-0 rounded-[10px] bg-primary max-xsm:w-[100px] max-xsm:h-[120px] overflow-hidden">
           <img
             src={coverImage || `/note_stack.svg`}
             alt="books"
-            className=" inset-0 w-full h-full object-cover"
+            className="w-full h-full object-cover"
           />
         </div>
-        <div className="w-[210px] max-xsm:w-[185px] flex flex-col justify-evenly relative">
-         {showDelete && (
-  <div
-    onClick={onDelete}
-    className="absolute right-0 top-3.5 bg-white"
-  >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="18"
-      height="18"
-      viewBox="0 0 18 18"
-      fill="none"
-      className="stroke-red-600"
-    >
-      <g opacity="0.5">
-        <path
-          d="M3 5.25H15M7.5 8.25V12.75M10.5 8.25V12.75M3.75 5.25L4.5 14.25C4.5 14.6478 4.65804 15.0294 4.93934 15.3107C5.22064 15.592 5.60218 15.75 6 15.75H12C12.3978 15.75 12.7794 15.592 13.0607 15.3107C13.342 15.0294 13.5 14.6478 13.5 14.25L14.25 5.25M6.75 5.25V3C6.75 2.80109 6.82902 2.61032 6.96967 2.46967C7.11032 2.32902 7.30109 2.25 7.5 2.25H10.5C10.6989 2.25 10.8897 2.32902 11.0303 2.46967C11.171 2.61032 11.25 2.80109 11.25 3V5.25"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </g>
-    </svg>
-  </div>
-)}
 
-          <div>
-            <p className="text-tittle_Medium text-black font-semibold truncate">
+        {/*
+          The details take whatever width is left.
+
+          This column was pinned to 210px, so on a wide browser the card grew
+          and the text did not -- which is why a long title arrived truncated
+          in the middle of an otherwise empty card. `min-w-0` is what lets it
+          shrink on a narrow screen instead of pushing the cover off the edge.
+        */}
+        <div className="flex min-w-0 flex-1 flex-col justify-between gap-3">
+          {/*
+            The title and this book's actions share a row.
+
+            Both icons used to be positioned absolutely over this column, which
+            printed them on top of the title -- the lock landed in the middle of
+            a word. In a row the title simply ends where the buttons begin.
+          */}
+          <div className="flex items-start gap-2">
+            <p className="min-w-0 flex-1 text-tittle_Medium text-ink font-semibold leading-snug line-clamp-2">
               {fileName}
             </p>
+
+            <div className="flex shrink-0 items-center gap-1">
+              {onToggleShare && (
+                <button
+                  type="button"
+                  onClick={onToggleShare}
+                  disabled={isSharing}
+                  aria-pressed={isPublic}
+                  aria-label={
+                    isPublic
+                      ? `Stop sharing ${fileName}`
+                      : `Share ${fileName} with other readers`
+                  }
+                  title={
+                    isPublic ? "Shared in Explore" : "Share with other readers"
+                  }
+                  className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-surface-variant disabled:opacity-50 ${
+                    isPublic ? "text-primary" : "text-[var(--ink-faint)]"
+                  }`}
+                >
+                  {isPublic ? <FiGlobe size={17} /> : <FiLock size={17} />}
+                </button>
+              )}
+
+              {showDelete && (
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  aria-label={`Remove ${fileName}`}
+                  title="Remove from your library"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--danger)] transition-colors hover:bg-[var(--danger)]/10"
+                >
+                  <FiTrash2 size={17} />
+                </button>
+              )}
+            </div>
           </div>
+
           <div>
-            <span className="flex text-tittle_Small text-[#5f5f61] justify-between mb-3 font-medium">
+            <span className="flex text-tittle_Small text-[var(--ink-soft)] justify-between mb-2 font-medium">
               <p>Progress</p>
               <p>{progPercent}</p>
             </span>
-            <span className="flex h-[7px] bg-[#e6e6e6] rounded-[12px] relative">
+            <span className="flex h-[7px] bg-[var(--border)] rounded-[12px] relative">
               <span
                 className="h-[7px] bg-primary rounded-full transition-all duration-300 ease-out"
                 style={{ width: `${validProgress}%` }}
               ></span>
             </span>
           </div>
-          <div>
-            <p className="text-[#5f5f61] max-xsm:text-[15px]">
-              {`page ${page} of ${totalPage}`}
-            </p>
-          </div>
+
+          <p className="text-[var(--ink-soft)] max-xsm:text-[15px]">
+            {`page ${page} of ${totalPage}`}
+          </p>
         </div>
       </div>
       <div>
+        {/*
+          `bg-primary/56` with `text-primary` put the brand blue on 56% of
+          itself, which is the label and the button in nearly the same colour --
+          legible in the mock and not much else. The wash is the same pairing
+          the shortcuts on Explore use.
+        */}
         <button
           onClick={onOpen}
-          className="h-[46px] w-full rounded-[11px] bg-primary/56 text-primary font-semibold flex justify-center items-center active:bg-primary"
+          className="h-[46px] w-full rounded-[11px] bg-brand-wash text-primary font-semibold flex justify-center items-center gap-1 transition-colors hover:bg-primary/15 active:bg-primary/20"
         >
-          <img src="/play_arrow.svg" alt="playicon" className="w-[24px]" />
+          <img src="/play_arrow.svg" alt="" className="w-[24px]" />
           {continueRead}
         </button>
       </div>
