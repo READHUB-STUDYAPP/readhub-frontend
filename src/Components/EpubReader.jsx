@@ -112,10 +112,23 @@ const EpubReader = forwardRef(
             );
           }
 
-          const bookData = bookSource instanceof ArrayBuffer
-            ? new Blob([bookSource], { type: "application/epub+zip" })
-            : bookSource;
-          const book = Epub(bookData, { openAs: "epub" });
+          /*
+            The bytes go in as bytes, and only a URL is opened as a URL.
+
+            This passed a Blob with `openAs: "epub"`, and in epub.js that type
+            means "this is the address of an EPUB": it calls `request(input)` on
+            what it is given. A Blob stringifies to "[object Blob]", so the
+            reader spent its whole timeout fetching a URL of that name and then
+            reported the book as invalid -- which is why a perfectly good file
+            downloaded from Project Gutenberg would not open.
+
+            `binary` is the type that means "these are the bytes", and it hands
+            them straight to the unarchiver.
+          */
+          const book =
+            bookSource instanceof ArrayBuffer
+              ? Epub(bookSource, { openAs: "binary" })
+              : Epub(bookSource);
           bookRef.current = book;
 
           console.log(book);
