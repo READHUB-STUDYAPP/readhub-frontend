@@ -147,15 +147,15 @@ const Notes = () => {
         </div>
 
         {/* Stats cards - always show */}
-        <div className="flex justify-between mb-8">
-          <div className="w-[171px] h-[72px] bg-surface px-4 justify-center flex flex-col rounded-[13.96px]">
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="h-[72px] min-w-0 bg-surface px-4 justify-center flex flex-col rounded-[13.96px]">
             <p className="text-primary text-headline_Small leading-7">{totalHighlights}</p>
             <p className="text-tertiary text-body_Small">
               Total highlights
             </p>
           </div>
 
-          <div className="w-[171px] h-[72px] bg-surface px-4 justify-center flex flex-col rounded-[13.96px]">
+          <div className="h-[72px] min-w-0 bg-surface px-4 justify-center flex flex-col rounded-[13.96px]">
             <p className="text-primary text-headline_Small leading-7">{totalBooks}</p>
             <p className="text-tertiary text-body_Small">Books</p>
           </div>
