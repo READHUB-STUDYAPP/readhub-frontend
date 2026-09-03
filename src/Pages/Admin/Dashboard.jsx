@@ -35,6 +35,7 @@ export default function Dashboard() {
   // The tallest bar sets the scale. Without the floor of 1, a week with no
   // reading divides by zero and every bar becomes NaN tall.
   const peak = Math.max(1, ...week);
+  const weekTotal = week.reduce((sum, minutes) => sum + (Number(minutes) || 0), 0);
 
   return (
     <AdminShell title="Dashboard">
@@ -74,26 +75,59 @@ export default function Dashboard() {
         <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
           {/* The week. */}
           <section className="flex flex-col gap-4 rounded-xl border border-line bg-surface p-4 sm:p-6">
-            <h3 className="text-tittle_Medium font-bold text-ink">Reading this week</h3>
-
-            <div className="flex h-64 items-end gap-2 sm:gap-4">
-              {DAYS.map((day, index) => {
-                const minutes = week[index] ?? 0;
-
-                return (
-                  <div key={day} className="flex min-w-0 flex-1 flex-col items-center gap-2">
-                    <div className="flex w-full flex-1 items-end">
-                      <div
-                        className="w-full rounded-t-lg bg-brand/70 transition-[height] duration-500"
-                        style={{ height: `${Math.max(2, (minutes / peak) * 100)}%` }}
-                        title={`${readingTime(minutes)} on ${day}`}
-                      />
-                    </div>
-                    <span className="text-label_Small text-ink-faint">{day}</span>
-                  </div>
-                );
-              })}
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h3 className="text-tittle_Medium font-bold text-ink">Reading this week</h3>
+              {weekTotal > 0 && (
+                <span className="text-label_Medium text-ink-faint">
+                  {`${readingTime(weekTotal)} in total`}
+                </span>
+              )}
             </div>
+
+            {!data ? (
+              <div className="h-64 animate-pulse rounded-lg bg-surface-variant" />
+            ) : weekTotal === 0 ? (
+              /*
+                Said outright, rather than drawn as seven flat bars.
+
+                A chart of nothing looks identical to a chart that failed to
+                load, and the reader of this page cannot tell which they are
+                looking at.
+              */
+              <div className="flex h-64 items-center justify-center rounded-lg border border-dashed border-line px-4 text-center">
+                <p className="text-body_Medium text-ink-soft">
+                  No reading recorded this week yet.
+                </p>
+              </div>
+            ) : (
+              /*
+                The columns must stretch to the row's height, which is what
+                gives the bar inside something to be a percentage of. This row
+                had `items-end`, and that switches stretching off: every column
+                collapsed to the height of its own label, the bar resolved its
+                height against zero, and the chart drew nothing but the days of
+                the week. Each column ends the bar at its own foot instead.
+              */
+              <div className="flex h-64 gap-2 sm:gap-4">
+                {DAYS.map((day, index) => {
+                  const minutes = week[index] ?? 0;
+                  const height = minutes > 0 ? Math.max(2, (minutes / peak) * 100) : 0;
+
+                  return (
+                    <div key={day} className="flex min-w-0 flex-1 flex-col gap-2">
+                      <div className="flex flex-1 items-end">
+                        <div
+                          className="w-full rounded-t-lg bg-brand/70 transition-[height] duration-500"
+                          style={{ height: `${height}%` }}
+                          title={`${readingTime(minutes)} on ${day}`}
+                        />
+                      </div>
+                      <span className="text-center text-label_Small text-ink-faint">{day}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </section>
 
           {/* What people are reading. */}
