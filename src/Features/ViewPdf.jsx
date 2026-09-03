@@ -1078,7 +1078,7 @@ const ViewPdf = () => {
                   <div className="grid grid-cols-2 gap-2 p-2 rounded-[14px] shadow-xl border border-[#DDE8FF] bg-white/95 backdrop-blur">
                     <button
                       onClick={handleHighlight}
-                      className="w-full text-center rounded-[12px] bg-primary text-white px-3 py-2 text-xs font-semibold hover:bg-[#0653C6] transition-colors"
+                      className="w-full text-center rounded-[12px] bg-primary text-ink-on-brand px-3 py-2 text-xs font-semibold hover:bg-brand-strong transition-colors"
                       title="Highlight selected text permanently"
                     >
                       Highlight
@@ -1086,7 +1086,7 @@ const ViewPdf = () => {
                     <button
                       onClick={handleSaveNote}
                       disabled={saving}
-                      className="w-full text-center rounded-[12px] bg-primary text-white px-3 py-2 text-xs font-semibold hover:bg-[#0653C6] transition-colors disabled:opacity-60"
+                      className="w-full text-center rounded-[12px] bg-primary text-ink-on-brand px-3 py-2 text-xs font-semibold hover:bg-brand-strong transition-colors disabled:opacity-60"
                       title="Save note to your library"
                     >
                       {saving ? 'Saving...' : 'Save'}

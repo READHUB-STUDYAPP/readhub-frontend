@@ -19,7 +19,8 @@ const Focus = ({
   const timers = [10, 15, 30, 45, 60];
 
   return (
-    <div className="bg-focusBg h-dvh w-dvw px-4 overflow-x-hidden">
+    <div className="bg-focusBg min-h-dvh w-full px-4 pb-10">
+      <div className="mx-auto w-full max-w-2xl">
       <div>
         <div className="flex items-center relative">
           <button className="absolute" onClick={() => navigate(-1)}>
@@ -53,7 +54,7 @@ const Focus = ({
             <h4 className="text-16px font-semibold text-[var(--ink)] mt-4">
               Focus Mode
             </h4>
-            <p className="text-[#555555] text-[12px] font-normal">
+            <p className="text-[var(--ink-soft)] text-[12px] font-normal">
               Focus on your reading with zero distractions
             </p>
           </div>
@@ -143,7 +144,7 @@ const Focus = ({
                       <Button
                         buttonText={time + "mins"}
                         buttonStyle={
-                          "focus:bg-focusBlue focus:text-white text-[var(--ink)] text-[12px] font-medium bg-surface h-[24px] w-[60px] rounded-[6px]"
+                          "focus:bg-focusBlue focus:text-[var(--ink-on-brand)] text-[var(--ink)] text-[12px] font-medium bg-surface h-[24px] w-[60px] rounded-[6px]"
                         }
                         onButtonClick={null}
                       />
@@ -212,7 +213,7 @@ const Focus = ({
                             </div>
                           }
                           buttonStyle={
-                            "w-[99px] h-[59px] border-[1px] rounded-[9px] border-[#5F5F616B] group focus:border-[var(--brand)]"
+                            "h-[59px] min-w-[92px] flex-1 border-[1px] rounded-[9px] border-[#5F5F616B] group focus:border-[var(--brand)]"
                           }
                         />
 
@@ -236,7 +237,7 @@ const Focus = ({
                             </div>
                           }
                           buttonStyle={
-                            "w-[99px] h-[59px] border-[1px] rounded-[9px] border-[#5F5F616B] group focus:border-[var(--brand)]"
+                            "h-[59px] min-w-[92px] flex-1 border-[1px] rounded-[9px] border-[#5F5F616B] group focus:border-[var(--brand)]"
                           }
                         />
 
@@ -256,7 +257,7 @@ const Focus = ({
                             </div>
                           }
                           buttonStyle={
-                            "w-[99px] h-[59px] border-[1px] rounded-[9px] border-[#5F5F616B] group focus:border-[var(--brand)]"
+                            "h-[59px] min-w-[92px] flex-1 border-[1px] rounded-[9px] border-[#5F5F616B] group focus:border-[var(--brand)]"
                           }
                         />
                       </div>
@@ -264,28 +265,28 @@ const Focus = ({
 
                     <div className="pb-8">
                       <p>Allow Notifications From</p>
-                      <div className="mt-2 flex flex-wrap justify-between gap-3 ">
+                      <div className="mt-2 grid grid-cols-2 gap-3">
                         <Button
                           buttonStyle={
-                            "w-[146px] h-[32px] rounded-[9px] border-[1px] border-[#5F5F616B] text-[var(--ink)] font-normal text-[12px] flex items-center pl-5"
+                            "h-[32px] w-full min-w-0 rounded-[9px] border-[1px] border-[#5F5F616B] text-[var(--ink)] font-normal text-[12px] flex items-center pl-5"
                           }
                           buttonText={"WhatsApp"}
                         />
                         <Button
                           buttonStyle={
-                            "w-[146px] h-[32px] rounded-[9px] border-[1px] border-[#5F5F616B] text-[var(--ink)] font-normal text-[12px] flex items-center pl-5"
+                            "h-[32px] w-full min-w-0 rounded-[9px] border-[1px] border-[#5F5F616B] text-[var(--ink)] font-normal text-[12px] flex items-center pl-5"
                           }
                           buttonText={"Email"}
                         />
                         <Button
                           buttonStyle={
-                            "w-[146px] h-[32px] rounded-[9px] border-[1px] border-[#5F5F616B] text-[var(--ink)] font-normal text-[12px] flex items-center pl-5"
+                            "h-[32px] w-full min-w-0 rounded-[9px] border-[1px] border-[#5F5F616B] text-[var(--ink)] font-normal text-[12px] flex items-center pl-5"
                           }
                           buttonText={"Telegram"}
                         />
                         <Button
                           buttonStyle={
-                            "w-[146px] h-[32px] rounded-[9px] border-[1px] border-[#5F5F616B] text-[var(--ink)] font-normal text-[12px] flex items-center pl-5"
+                            "h-[32px] w-full min-w-0 rounded-[9px] border-[1px] border-[#5F5F616B] text-[var(--ink)] font-normal text-[12px] flex items-center pl-5"
                           }
                           buttonText={"Other"}
                         />
@@ -367,7 +368,7 @@ const Focus = ({
       </div>
       <div className="flex w-full justify-center h-50 items-center">
         {isActive ? (
-          <div className="w-full h-[51px] rounded-[9px] bg-[#fff] flex pl-4 items-center">
+          <div className="w-full h-[51px] rounded-[9px] bg-surface flex pl-4 items-center">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -390,13 +391,14 @@ const Focus = ({
           <Button
             buttonText={"Start Focus Session"}
             buttonStyle={
-              "bg-focusBlue text-white h-[39px] w-[297px] rounded-[28px] text-[15px] font-semibold"
+              "bg-focusBlue text-[var(--ink-on-brand)] h-[39px] w-full max-w-[297px] rounded-[28px] text-[15px] font-semibold"
             }
             onButtonClick={() => {
               setIsActive(true);
             }}
           />
         )}
+      </div>
       </div>
     </div>
   );
