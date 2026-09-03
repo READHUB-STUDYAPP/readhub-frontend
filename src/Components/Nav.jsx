@@ -12,7 +12,7 @@ const Nav = () => {
           className={({ isActive }) =>
             isActive
               ? "bg-primary/50 rounded-[10px] py-2 w-[53px] text-primary stroke-primary flex justify-center transition-colors duration-300"
-              : "bg-transparent rounded-[10px] py-2 w-[53px] text-[#737373] stroke-[#737373] flex justify-center transition-colors duration-300 "
+              : "bg-transparent rounded-[10px] py-2 w-[53px] text-[var(--ink-faint)] stroke-[var(--ink-faint)] flex justify-center transition-colors duration-300 "
           }
         >
           <span className="flex flex-col items-center">
@@ -45,7 +45,7 @@ const Nav = () => {
           className={({ isActive }) =>
             isActive
               ? "bg-primary/50 rounded-[10px] py-2 w-[53px] text-primary stroke-primary flex justify-center transition-colors duration-300"
-              : "bg-transparent rounded-[10px] py-2 w-[53px] text-[#737373] stroke-[#737373] flex justify-center transition-colors duration-300"
+              : "bg-transparent rounded-[10px] py-2 w-[53px] text-[var(--ink-faint)] stroke-[var(--ink-faint)] flex justify-center transition-colors duration-300"
           }
         >
           <span className="flex flex-col items-center">
@@ -72,7 +72,7 @@ const Nav = () => {
           className={({ isActive }) =>
             isActive
               ? "bg-primary/50 rounded-[10px] py-2 w-[53px] text-primary stroke-primary flex justify-center transition-colors duration-300"
-              : "bg-transparent rounded-[10px] py-2 w-[53px] text-[#737373] stroke-[#737373] flex justify-center transition-colors duration-300"
+              : "bg-transparent rounded-[10px] py-2 w-[53px] text-[var(--ink-faint)] stroke-[var(--ink-faint)] flex justify-center transition-colors duration-300"
           }
         >
           <span className="flex flex-col items-center">
@@ -105,7 +105,7 @@ const Nav = () => {
           className={({ isActive }) =>
             isActive
               ? "bg-primary/50 rounded-[10px] py-2 w-[53px] text-primary stroke-primary flex justify-center transition-colors duration-300 "
-              : "bg-transparent rounded-[10px] py-2 w-[53px] text-[#737373] stroke-[#737373] flex justify-center transition-colors duration-300"
+              : "bg-transparent rounded-[10px] py-2 w-[53px] text-[var(--ink-faint)] stroke-[var(--ink-faint)] flex justify-center transition-colors duration-300"
           }
         >
           <span className="flex flex-col items-center">
@@ -127,7 +127,7 @@ const Nav = () => {
           className={({ isActive }) =>
             isActive
               ? "bg-primary/50 rounded-[10px] py-2 w-[53px] text-primary stroke-primary flex justify-center transition-colors duration-300"
-              : "bg-transparent rounded-[10px] py-2 w-[53px] text-[#737373] stroke-[#737373] flex justify-center transition-colors duration-300"
+              : "bg-transparent rounded-[10px] py-2 w-[53px] text-[var(--ink-faint)] stroke-[var(--ink-faint)] flex justify-center transition-colors duration-300"
           }
         >
           <span className="flex flex-col items-center">

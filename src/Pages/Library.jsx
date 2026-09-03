@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useFiles } from '../Context/FileContext';
 import Epub from 'epubjs';
 
-import { extractPdfCover, extractEpubCover } from '../Utils/coverExtractor';
+import { extractPdfCover, extractEpubCover, generateCoverImage } from '../Utils/coverExtractor';
 import { optimizePdfLossy } from '../Utils/pdfLossyOptimize';
 import LoadingContCard from '../Components/LoadingContCard';
 import { ReadHubImages } from '../assets/asset';
@@ -172,7 +172,9 @@ const Library = () => {
           title: file.name.replace('.pdf', ''),
           author: 'Unknown',
           totalPages: totalPages,
-          coverImage: coverImage,
+          // Same guard as the EPUB path: a PDF whose first page will not
+          // render leaves no cover, and the server refuses a book without one.
+          coverImage: coverImage || generateCoverImage(file.name.replace('.pdf', ''), 'Unknown'),
         },
         (pct) => {
           const percent = Number(pct);
@@ -253,11 +255,17 @@ const Library = () => {
       } catch {}
       book.destroy();
 
+      const title = metadata.title || file.name.replace(/\.epub$/i, '');
+      const author = metadata.creator || 'Unknown';
+
       await uploadBook(file, {
-        title: metadata.title || file.name.replace(/\.epub$/i, ''),
-        author: metadata.creator || 'Unknown',
+        title,
+        author,
         totalPages,
-        coverImage,
+        // Most EPUBs carry no cover image, and the server refuses a book
+        // without one -- which is why these uploads failed with nothing on
+        // screen to explain it. One is drawn when the file has none.
+        coverImage: coverImage || generateCoverImage(title, author),
       }, (pct) => setUploadProgress(Math.max(0, Math.min(100, Number(pct) || 0))));
 
       setUploadProgress(100);

@@ -53,7 +53,7 @@ const Focus = ({
             <h4 className="text-16px font-semibold text-[var(--ink)] mt-4">
               Focus Mode
             </h4>
-            <p className="text-[#555555] text-[12px] font-normal">
+            <p className="text-[var(--ink-soft)] text-[12px] font-normal">
               Focus on your reading with zero distractions
             </p>
           </div>
@@ -367,7 +367,7 @@ const Focus = ({
       </div>
       <div className="flex w-full justify-center h-50 items-center">
         {isActive ? (
-          <div className="w-full h-[51px] rounded-[9px] bg-[#fff] flex pl-4 items-center">
+          <div className="w-full h-[51px] rounded-[9px] bg-surface flex pl-4 items-center">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"

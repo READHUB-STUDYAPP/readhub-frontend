@@ -11,9 +11,23 @@ import { ReadHubImages } from '../assets/asset';
  * content is one PNG shows nothing at all if that request is slow or fails --
  * which is exactly the moment a reader is deciding whether the app is working.
  */
+/*
+ * The brand blue, fixed, in both themes.
+ *
+ * `bg-brand` lightens in dark so it stays legible as an accent on a dark page
+ * -- right everywhere else, wrong here, where the blue is the whole screen and
+ * is the first thing anyone sees of the product. This is the one place that
+ * wants the literal brand colour rather than the themed role, so it takes the
+ * palette value directly.
+ */
+const BRAND = { backgroundColor: 'var(--brand-500)' };
+
 export default function SplashScreen() {
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-brand px-4">
+    <div
+      className="flex min-h-dvh flex-col items-center justify-center gap-4 px-4"
+      style={BRAND}
+    >
       <img
         src={ReadHubImages.FirstOnboardingImageIcon}
         alt=""

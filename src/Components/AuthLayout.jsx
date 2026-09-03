@@ -90,7 +90,7 @@ function PromoPanel() {
               onClick={() => setIndex(position)}
               className={[
                 'h-1.5 rounded-full transition-all',
-                position === index ? 'w-6 bg-surface' : 'w-1.5 bg-surface/50',
+                position === index ? 'w-6 bg-white' : 'w-1.5 bg-white/50',
               ].join(' ')}
             />
           ))}
