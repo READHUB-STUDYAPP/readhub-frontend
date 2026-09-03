@@ -142,8 +142,13 @@ const Profile = () => {
                     <h1 className="text-2xl font-semibold text-left mt-10">Profile</h1>
                 </div>
                 <div className="card mt-5 flex items-start justify-start flex-col gap-5 p-5 bg-surface rounded-lg">
-                    <div className="userDetails flex gap-9 items-center w-full flex-row">
-                        <div className="image relative">
+                    {/* An email is one long unbroken string, so the column it
+                        sits in has to be allowed to shrink -- without `min-w-0`
+                        a flex child refuses to go below its content width and
+                        the address runs out of the card. The gap was also a
+                        fixed 36px, which is a lot of a phone's width. */}
+                    <div className="userDetails flex w-full flex-row items-center gap-4 sm:gap-9">
+                        <div className="image relative shrink-0">
                             <span className="userimage w-20 h-20">
                                 <ProfilePhotoSelector image={image} />
                             </span>
@@ -161,11 +166,14 @@ const Profile = () => {
                                 <img src={ReadHubImages.EditIcon} alt="" />
                             </span>
                         </div>
-                        <div className="userInfo flex items-start justify-start flex-col">
-                            <span className="username text-lg font-medium">
+                        <div className="userInfo flex min-w-0 flex-1 flex-col items-start justify-start">
+                            <span className="username w-full truncate text-lg font-medium">
                                 {user ? user.username : 'username'}
                             </span>
-                            <span className="useremail underline text-sm text-ink-soft">
+                            <span
+                                className="useremail w-full truncate text-sm text-ink-soft underline"
+                                title={user?.email}
+                            >
                                 {user ? user.email : 'user@gmail.com'}
                             </span>
                         </div>

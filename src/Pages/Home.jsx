@@ -114,7 +114,7 @@ const Home = () => {
       
       <div className="flex pt-13 pb-[26px] justify-between items-center px-[16px]">
         <div className="flex flex-row items-center">
-          <span className="flex h-[46px] w-[46px] bg-[#C4C4C4] rounded-full justify-center items-center animate-pulse">
+          <span className="flex h-[46px] w-[46px] bg-surface-variant rounded-full justify-center items-center animate-pulse">
            
           </span>
           <span className="flex flex-col pl-1 w-fit">
@@ -135,8 +135,8 @@ const Home = () => {
 
       <div className="px-[16px] pb-[26px] xsm:text-[15px]">
         <div className="bg-[var(--border)] animate-pulse min-h-[177px] rounded-[20px] relative overflow-hidden text-white px-[16px] py-[23px] flex flex-col justify-between">
-          <span className="flex h-[100px] w-[100px] bg-surface/20 rounded-full absolute left-72 top-[-30px]"></span>
-          <span className="flex h-[100px] w-[100px] bg-surface/20 rounded-full absolute top-30 left-[-40px]"></span>
+          <span className="flex h-[100px] w-[100px] bg-white/20 rounded-full absolute left-72 top-[-30px]"></span>
+          <span className="flex h-[100px] w-[100px] bg-white/20 rounded-full absolute top-30 left-[-40px]"></span>
         </div>
       </div>
 
@@ -150,7 +150,7 @@ const Home = () => {
       </div>
 
       <div className="px-[16px] pb-10">
-        <div className="bg-[#fff] px-[16px] min-h-[133px] rounded-[20px] py-[20px] flex flex-col justify-between ">
+        <div className="bg-surface px-[16px] min-h-[133px] rounded-[20px] py-[20px] flex flex-col justify-between ">
           <p className="bg-[var(--border)] animate-pulse w-30 h-[18px] rounded-[3px]"></p>
           <p className="bg-[var(--border)] animate-pulse w-40 h-[18px] leading-4 rounded-[3px]">
           </p>
@@ -190,7 +190,7 @@ const Home = () => {
       `}</style>
       <div className="flex pt-13 pb-[26px] justify-between items-center px-[16px]">
         <div className="flex flex-row items-center">
-          <span className="flex h-[46px] w-[46px] bg-[#d9d9d9] rounded-full justify-center items-center">
+          <span className="flex h-[46px] w-[46px] bg-surface-variant rounded-full justify-center items-center">
             {image ? (
               <img
                 src={image}
@@ -235,8 +235,8 @@ const Home = () => {
 
       <div className="px-[16px] pb-[26px] xsm:text-[15px]">
         <div className="bg-primary min-h-[177px] rounded-[20px] relative overflow-hidden text-white px-[16px] py-[23px] flex flex-col justify-between">
-          <span className="flex h-[100px] w-[100px] bg-surface/20 rounded-full absolute left-72 top-[-30px]"></span>
-          <span className="flex h-[100px] w-[100px] bg-surface/20 rounded-full absolute top-30 left-[-40px]"></span>
+          <span className="flex h-[100px] w-[100px] bg-white/20 rounded-full absolute left-72 top-[-30px]"></span>
+          <span className="flex h-[100px] w-[100px] bg-white/20 rounded-full absolute top-30 left-[-40px]"></span>
           <div className="flex items-center">
             <img src="/Group2.svg" alt="asset" className="w-[20px] h-[20px]" />
             <p className="pl-2 font-medium">Daily Reading Goal</p>
@@ -248,7 +248,7 @@ const Home = () => {
               </p>
               <p className="">/ {dailyGoal} min</p>
             </span>
-            <span className="w-full bg-[#cde1fe] h-[14px] flex rounded-full overflow-hidden">
+            <span className="w-full bg-brand-wash h-[14px] flex rounded-full overflow-hidden">
               <span
                 className="h-full bg-brand-strong rounded-full transition-all duration-300"
                 style={{ width: `${progressPct}%` }}
@@ -298,7 +298,7 @@ const Home = () => {
       </div>
 
       <div className="px-[16px] pb-10">
-        <div className="bg-[#fff] px-[16px] min-h-[133px] rounded-[20px] py-[20px] flex flex-col justify-between">
+        <div className="bg-surface px-[16px] min-h-[133px] rounded-[20px] py-[20px] flex flex-col justify-between">
           <p className="text-tittle_Small text-[var(--ink-soft)]">Daily Inspiration</p>
           <p className="text-ink font-medium text-[14px] leading-4">
             “Reading is essential for those who seek to rise above the ordinary”
