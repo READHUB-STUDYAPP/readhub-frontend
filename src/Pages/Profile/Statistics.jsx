@@ -118,40 +118,40 @@ const Statistics = () => {
     `flex flex-col justify-center items-center gap-4 rounded-xl py-5 px-1 border transition-colors ${
       achieved
         ? 'bg-yellow-50 border-yellow-200'
-        : 'bg-blue-50 border-transparent'
+        : 'bg-brand-wash border-transparent'
     }`
 
   return (
     <>
-    <div  className='p-5 bg-gray-100 min-h-screen'>
+    <div  className='p-5 bg-page min-h-screen'>
         <div className='flex flex-row gap-2 items-center justify-start mt-5'>
             <span onClick={() => navigate("/profile")}><img src={ReadHubImages.BackwardArrow} alt="" /></span>
              <span className='text-2xl font-medium'>Statistics</span>
         </div>
 
         {error && (
-          <div className='mt-4 bg-red-50 text-red-700 border border-red-200 rounded-lg p-3'>
+          <div className='mt-4 bg-danger/10 text-danger border border-red-200 rounded-lg p-3'>
             {error}
           </div>
         )}
 
         <div className="cards grid grid-cols-2 gap-4 mt-10">
-            <div className='flex flex-col gap-3 bg-white p-5 rounded-lg'>
+            <div className='flex flex-col gap-3 bg-surface p-5 rounded-lg'>
                 <span><img src={ReadHubImages.bookIcon} alt="" className='w-6 h-6' /></span>
                 <span className='font-semibold text-xl'>{loading ? '...' : completedBooks}</span>
                 <span className='font-light'>Books Read</span>
             </div>
-            <div className='flex flex-col gap-3 bg-white p-5 rounded-lg'>
+            <div className='flex flex-col gap-3 bg-surface p-5 rounded-lg'>
                 <span><img src={ReadHubImages.timeIcon} alt=""  className='w-6 h-6'/></span>
                 <span className='font-semibold text-xl'>{loading ? '...' : `${totalHoursRead}h`}</span>
                 <span className='font-light'>Total Hours</span>
             </div>
-            <div className='flex flex-col gap-3 bg-white p-5 rounded-lg'>
+            <div className='flex flex-col gap-3 bg-surface p-5 rounded-lg'>
                 <span><img src={ReadHubImages.fireIcon} alt="" className='w-6 h-8' /></span>
                 <span className='font-semibold text-xl'>{loading ? '...' : currentStreak}</span>
                 <span className='font-light'>Day Streak</span>
             </div>
-            <div className='flex flex-col gap-3 bg-white p-5 rounded-lg'>
+            <div className='flex flex-col gap-3 bg-surface p-5 rounded-lg'>
                 <span><img src={ReadHubImages.highlightIcon} alt="" className='w-8 h-8' /></span>
                 <span className='font-semibold text-xl'>{totalHighlights}</span>
                 <span className='font-light'>Highlights</span>
@@ -159,7 +159,7 @@ const Statistics = () => {
         </div>
 
 
-        <div className="card mt-10 bg-blue-500 flex flex-col gap-5 p-5 rounded-2xl justify-start items-start w-full">
+        <div className="card mt-10 bg-brand flex flex-col gap-5 p-5 rounded-2xl justify-start items-start w-full">
             <div className='flex flex-row justify-between w-full items-center'>
                 <div className='flex flex-row items-center justify-center gap-2'>
                     <span><img src={ReadHubImages.circlesIcon} alt="" /></span>
@@ -168,20 +168,20 @@ const Statistics = () => {
                 <div><span><img src={ReadHubImages.ForwardArrow} alt="" /></span></div>
             </div>
             <div className='flex flex-col gap-1 w-full justify-start items-start'>
-                <div className='flex flex-row justify-between items-center gap-46 w-full'>
-                    <div><span className='text-white text-sm'>Today's Progress</span></div>
-                    <div><span className='text-white text-sm'>{loading ? '.../...' : `${Math.round(todayReadingMinutes)}/${dailyGoal}min`}</span></div>
+                <div className='flex flex-row justify-between items-center gap-3 w-full'>
+                    <span className='text-white text-sm'>Today's Progress</span>
+                    <span className='text-white text-sm whitespace-nowrap tabular-nums'>{loading ? '.../...' : `${Math.round(todayReadingMinutes)}/${dailyGoal}min`}</span>
                 </div>
-                <div className="w-full h-3 bg-blue-200 mt-5 rounded-lg overflow-hidden">
+                <div className="w-full h-3 bg-brand-wash mt-5 rounded-lg overflow-hidden">
                   <div
-                    className="h-full bg-blue-700 rounded-lg transition-all duration-300"
+                    className="h-full bg-brand-strong rounded-lg transition-all duration-300"
                     style={{ width: `${todayProgressPct}%` }}
                   />
                 </div>
             </div>
         </div>
 
-        <div className="card flex flex-col gap-8 px-4 py-8 bg-white rounded-2xl mt-10">
+        <div className="card flex flex-col gap-8 px-4 py-8 bg-surface rounded-2xl mt-10">
             <div className='flex flex-row gap-2 items-center justify-start'>
                 <span><img src={ReadHubImages.calendarIcon} alt="" /></span>
                 <span className='text-xl font-medium'>This week</span>
@@ -195,65 +195,65 @@ const Statistics = () => {
                 return (
                   <div key={label} className='flex flex-col items-center justify-end gap-2 flex-1'>
                     <div
-                      className={`${metGoal ? 'bg-blue-500' : 'bg-blue-300'} w-full max-w-[44px] rounded-t-3xl transition-all duration-300`}
+                      className={`${metGoal ? 'bg-brand' : 'bg-blue-300'} w-full max-w-[44px] rounded-t-3xl transition-all duration-300`}
                       style={{ height: `${height}px` }}
                       title={loading ? '' : `${minutes} min`}
                     />
-                    <span className='text-sm text-gray-700'>{label}</span>
+                    <span className='text-sm text-ink-soft'>{label}</span>
                   </div>
                 )
               })}
             </div>
             <div className='flex flex-row gap-4 items-center justify-center'>
                 <div className='flex flex-row gap-2 justify-center items-center'>
-                    <div className='p-2 w-2 h-2 rounded bg-blue-500'><span></span></div>
+                    <div className='p-2 w-2 h-2 rounded bg-brand'><span></span></div>
                     <span className='text-sm'>Goal met</span>
                 </div>
                 <div className='flex flex-row gap-2 justify-center items-center'>
                     <div className='p-2 w-2 h-2 rounded bg-blue-300'><span></span></div>
-                    <span className='text-gray-700 text-sm'>Under goal</span>
+                    <span className='text-ink-soft text-sm'>Under goal</span>
                 </div>
             </div>
         </div>
 
-        <div className="card mt-10 bg-white px-6 py-8 rounded-lg flex flex-col justify-start items-start gap-4">
+        <div className="card mt-10 bg-surface px-6 py-8 rounded-lg flex flex-col justify-start items-start gap-4">
             <div className='flex flex-row gap-4 justify-start items-center'>
                 <span><img src={ReadHubImages.progressIcon} alt="" className='w-6 h-4' /></span>
-                <span className='text-xl font-semibold text-gray-800'>Reading Progress</span>
+                <span className='text-xl font-semibold text-ink-soft'>Reading Progress</span>
             </div>
             <div className='flex flex-col gap-3 justify-start items-start w-full mt-3'>
                 <div className='flex flex-row w-full justify-between items-center'>
-                    <span className='text-gray-600'>Completed books</span>
-                    <span className='text-gray-600'>{loading ? '...' : completedBooks}</span>
+                    <span className='text-ink-faint'>Completed books</span>
+                    <span className='text-ink-faint'>{loading ? '...' : completedBooks}</span>
                 </div>
-                <div className='h-3 rounded-xl bg-gray-200 w-full overflow-hidden'>
-                  <div className='h-full bg-blue-500 rounded-xl' style={{ width: `${completedPct}%` }} />
+                <div className='h-3 rounded-xl bg-surface-variant w-full overflow-hidden'>
+                  <div className='h-full bg-brand rounded-xl' style={{ width: `${completedPct}%` }} />
                 </div>
             </div>
             <div className='flex flex-col gap-3 justify-start items-start w-full'>
                 <div className='flex flex-row w-full justify-between items-center'>
-                    <span className='text-gray-600'>Currently Reading</span>
-                    <span className='text-gray-600'>{loading ? '...' : currentlyReading}</span>
+                    <span className='text-ink-faint'>Currently Reading</span>
+                    <span className='text-ink-faint'>{loading ? '...' : currentlyReading}</span>
                 </div>
-                <div className='h-3 rounded-xl bg-gray-200 w-full overflow-hidden'>
+                <div className='h-3 rounded-xl bg-surface-variant w-full overflow-hidden'>
                   <div className='h-full bg-blue-300 rounded-xl' style={{ width: `${readingPct}%` }} />
                 </div>
             </div>
             <div className='flex flex-col gap-3 justify-start items-start w-full'>
                 <div className='flex flex-row w-full justify-between items-center'>
-                    <span className='text-gray-600'>Best Streak</span>
-                    <span className='text-gray-600'>{loading ? '...' : `${safeBestStreak} days`}</span>
+                    <span className='text-ink-faint'>Best Streak</span>
+                    <span className='text-ink-faint'>{loading ? '...' : `${safeBestStreak} days`}</span>
                 </div>
-                <div className='h-3 rounded-xl bg-gray-200 w-full overflow-hidden'>
+                <div className='h-3 rounded-xl bg-surface-variant w-full overflow-hidden'>
                   <div
-                    className='h-full bg-blue-500 rounded-xl transition-all duration-300'
+                    className='h-full bg-brand rounded-xl transition-all duration-300'
                     style={{ width: `${loading ? 0 : streakBarPct}%` }}
                   />
                 </div>
             </div>
         </div>
 
-        <div className="card bg-white rounded-2xl mt-10 mb-20 px-3 py-5 flex flex-col gap-10">
+        <div className="card bg-surface rounded-2xl mt-10 mb-20 px-3 py-5 flex flex-col gap-10">
             <div className='flex flex-row gap-4 justify-start items-center'>
                 <span><img src={ReadHubImages.achievementIcon} alt="" className='w-4 h-6' /></span>
                 <span className='text-xl font-semibold'>Achievements</span>

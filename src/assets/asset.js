@@ -63,7 +63,12 @@ import logoutSvgIcon from "../assets/logoutSvgIcon.svg"
 import dropdownSvg from "../assets/dropdownIcon.svg"
 import blankCircleSvgIcon from "../assets/blankCircle.svg"
 import searchSvgIcon from '../assets/searchIcon.svg'
-
+import loading1 from "../assets/loading1.svg"
+import loading2 from "../assets/loading2.svg"
+import loading3 from "../assets/loading3.svg"
+import onboardImg1 from "../assets/onboardImg1.svg"
+import onboardImg2 from "../assets/onboardImg2.svg"
+import onboardImg3 from "../assets/onboardImg3.svg"
 
 export const ReadHubImages = {
     FirstOnboardingImageIcon,
@@ -130,5 +135,11 @@ export const ReadHubImages = {
     dropdownSvg,
     logoutSvgIcon,
     blankCircleSvgIcon,
-    searchSvgIcon
+    searchSvgIcon,
+    loading1,
+    loading2,
+    loading3,
+    onboardImg1,
+    onboardImg2,
+    onboardImg3,
 }

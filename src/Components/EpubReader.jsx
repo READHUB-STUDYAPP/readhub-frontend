@@ -6,7 +6,7 @@ import React, {
   useState,
   forwardRef,
 } from "react";
-import { useSwipeable } from "react-swipeable";
+import { baseURL, apiEndpoints } from "../Util/apiEndpoints";
 
 const EpubReader = forwardRef(
   ({ file, fontSize, theme, onLocationChange }, ref) => {
@@ -16,6 +16,14 @@ const EpubReader = forwardRef(
 
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    const withTimeout = (promise, message, timeout = 30000) =>
+      Promise.race([
+        promise,
+        new Promise((_, reject) => {
+          setTimeout(() => reject(new Error(message)), timeout);
+        }),
+      ]);
 
     //Expose methods to parent
     useImperativeHandle(ref, () => ({
@@ -53,9 +61,18 @@ const EpubReader = forwardRef(
     }, [theme]);
 
     useEffect(() => {
-      if (!file?.fileData || !viewerRef.current) return;
+      const source = file?.fileData || file?.fileUrl;
+      if (!viewerRef.current) return;
 
       let mounted = true;
+      setError(null);
+      viewerRef.current.replaceChildren();
+
+      if (!source) {
+        setIsLoading(false);
+        setError("The EPUB book could not be found.");
+        return;
+      }
 
       const loadBook = async () => {
         try {
@@ -63,27 +80,51 @@ const EpubReader = forwardRef(
 
           console.log("Starting EPUB load...");
 
-          // Convert base64 to blob
-          const base64String = file.fileData.split(",")[1];
-          const binaryString = atob(base64String);
-          const bytes = new Uint8Array(binaryString.length);
-
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
+          let bookSource = source;
+          if (file?._id) {
+            const token = localStorage.getItem("token");
+            const contentUrl = `${baseURL}${apiEndpoints.BOOK_CONTENT.replace(":bookId", file._id)}`;
+            const controller = new AbortController();
+            const response = await withTimeout(
+              fetch(contentUrl, { headers: token ? { Authorization: `Bearer ${token}` } : {}, signal: controller.signal }),
+              "The EPUB download timed out. Check the API and storage service.",
+            ).catch((downloadError) => {
+              controller.abort();
+              throw downloadError;
+            });
+            if (!response.ok) throw new Error(`Unable to download EPUB (${response.status})`);
+            bookSource = await withTimeout(response.arrayBuffer(), "The EPUB file could not be read.");
+          } else if (typeof source === "string" && /^https?:\/\//i.test(source)) {
+            const controller = new AbortController();
+            const response = await withTimeout(
+              fetch(source, { credentials: "omit", signal: controller.signal }),
+              "The EPUB download timed out. Check the file URL and storage service.",
+            ).catch((downloadError) => {
+              controller.abort();
+              throw downloadError;
+            });
+            if (!response.ok) {
+              throw new Error(`Unable to download EPUB (${response.status})`);
+            }
+            bookSource = await withTimeout(
+              response.arrayBuffer(),
+              "The EPUB file could not be read.",
+            );
           }
 
-          const bookData = new Blob([bytes], { type: "application/epub+zip" });
-
-          //Book Instance
-          const book = Epub(bookData);
+          const bookData = bookSource instanceof ArrayBuffer
+            ? new Blob([bookSource], { type: "application/epub+zip" })
+            : bookSource;
+          const book = Epub(bookData, { openAs: "epub" });
           bookRef.current = book;
 
           console.log(book);
 
           //book load
-          await book.ready;
-          await book.locations.generate(1024);
-
+          await withTimeout(
+            book.ready,
+            "The EPUB could not be parsed. The uploaded file may be invalid.",
+          );
           const rendition = book.renderTo(viewerRef.current, {
             width: "100%",
             height: "100%",
@@ -105,7 +146,18 @@ const EpubReader = forwardRef(
             onLocationChange?.({ current: current + 1, total });
           });
 
-          await rendition.display();
+          await withTimeout(
+            rendition.display(),
+            "The first EPUB page could not be rendered.",
+          );
+
+          if (mounted) setIsLoading(false);
+
+          // Location generation is only needed for page navigation and can be
+          // expensive for large EPUBs. Do not block the initial render on it.
+          book.locations.generate(1024).catch((locationError) => {
+            console.warn("Unable to generate EPUB locations", locationError);
+          });
 
           rendition?.hooks.content.register((contents) => {
             const doc = contents.document;
@@ -156,11 +208,10 @@ const EpubReader = forwardRef(
             }
           });
 
-          if (mounted) setIsLoading(false);
         } catch (err) {
           console.error("Error loading EPUB :", err);
           if (mounted) {
-            setError("Failed to load EPUB file");
+            setError(err.message || "Failed to load EPUB file");
             setIsLoading(false);
           }
         }
@@ -186,17 +237,17 @@ const EpubReader = forwardRef(
     return (
       <>
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center z-10 bg-white">
+          <div className="absolute inset-0 flex items-center justify-center z-10 bg-surface">
             <div className="text-center">
-              <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-gray-600">Loading your book...</p>
+              <div className="w-16 h-16 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-ink-faint">Loading your book...</p>
             </div>
           </div>
         )}
 
         {error && (
-          <div className="absolute inset-0 flex items-center justify-center z-10 bg-white">
-            <p className="text-red-500">{error}</p>
+          <div className="absolute inset-0 flex items-center justify-center z-10 bg-surface">
+            <p className="text-danger">{error}</p>
           </div>
         )}
 

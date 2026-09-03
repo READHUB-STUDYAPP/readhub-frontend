@@ -11,6 +11,9 @@ import { extractPdfCover, extractEpubCover } from '../Utils/coverExtractor';
 import { optimizePdfLossy } from '../Utils/pdfLossyOptimize';
 import LoadingContCard from '../Components/LoadingContCard';
 import { ReadHubImages } from '../assets/asset';
+import { toast } from 'react-toastify';
+import { discoverApi } from '../services/discover';
+import { FiSearch, FiX } from 'react-icons/fi';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -25,6 +28,7 @@ const Library = () => {
     currentPage,
     updateCurrentPage,
     deleteBook,
+    setBookShared,
     setBookCategory,
     loading,
   } = useFiles();
@@ -276,7 +280,7 @@ const Library = () => {
 
   const openEpub = (file) => {
     selectFile(file);
-    navigate(`/viewepub/${file.id}`);
+    navigate(`/viewepub/${file._id}`);
   };
 
   const filters = ['All books', 'Reading', 'Completed'];
@@ -315,6 +319,41 @@ const Library = () => {
 
   const filtered = filterBooks(files, activeFilter.toLowerCase());
 
+  // Which book's sharing is in flight, so only that card's control waits.
+  const [sharingId, setSharingId] = useState(null);
+
+  /**
+   * Shares a book, or withdraws it.
+   *
+   * One click, as on the phone. Only turning sharing *on* asks first: it puts
+   * the book in front of every other reader and lets them take a copy, which
+   * is not something to find out afterwards. Withdrawing is the undo, so it
+   * happens immediately.
+   */
+  const handleToggleShare = async (book) => {
+    const next = !book.isPublic;
+
+    if (
+      next &&
+      !window.confirm(
+        `Share "${book.title}"? It will appear in Explore, where anyone can add it to their own library.`,
+      )
+    ) {
+      return;
+    }
+
+    setSharingId(book._id);
+    try {
+      await discoverApi.setVisibility(book._id, next);
+      setBookShared(book._id, next);
+      toast.success(next ? 'Shared in Explore.' : 'No longer shared.');
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'Could not change sharing for that book.');
+    } finally {
+      setSharingId(null);
+    }
+  };
+
   const handleDelete = async (bookId) => {
     const confirm = window.confirm('Delete this book ?');
     if (!confirm) return;
@@ -325,43 +364,43 @@ const Library = () => {
     <div className="px-[16px] pt-[40px] overflow-hidden pb-15">
       {isUploading && (
         <div className="fixed inset-0 bg-black/50 flex items-center px-5 xl:px-10 justify-center z-50">
-          <div className="bg-white rounded-lg p-6 flex flex-col justify-center items-center">
-            <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="bg-surface rounded-lg p-6 flex flex-col justify-center items-center">
+            <div className="w-8 h-8 border-3 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             {showCompressionInfo ? (
               <div className="flex flex-col items-center gap-1">
                 <p
                   className={`text-[16px] ${
-                    uploadStep === 'compressing' ? 'text-gray-800 font-semibold' : 'text-gray-500'
+                    uploadStep === 'compressing' ? 'text-ink-soft font-semibold' : 'text-ink-faint'
                   }`}
                 >
                   Compressing your file....
                 </p>
-                <p className="text-gray-800 text-center text-xs">
+                <p className="text-ink-soft text-center text-xs">
                   Your file is larger than 10MB. We're compressing it to make uploads faster and
                   improve your reading experience.
                 </p>
 
                 {/* Progress Bar */}
-                <div className="w-25 bg-gray-200 rounded-full h-2 mt-2">
+                <div className="w-25 bg-surface-variant rounded-full h-2 mt-2">
                   <div
-                    className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                    className="bg-brand h-2 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
-                <p className="text-sm text-gray-500 text-center mt-1">{uploadProgress}%</p>
+                <p className="text-sm text-ink-faint text-center mt-1">{uploadProgress}%</p>
 
                 <p
                   className={`text-[16px] ${
-                    uploadStep === 'uploading' ? 'text-gray-600 text-xs' : 'text-gray-400'
+                    uploadStep === 'uploading' ? 'text-ink-faint text-xs' : 'text-ink-faint'
                   }`}
                 >
                   ...almost done
                 </p>
 
-                <p className='text-gray-800 text-xs '><b>Tip:</b> You can create notes while reading your books</p>
+                <p className='text-ink-soft text-xs '><b>Tip:</b> You can create notes while reading your books</p>
               </div>
             ) : (
-              <p className="text-gray-700 text-[16px]">Uploading book...</p>
+              <p className="text-ink-soft text-[16px]">Uploading book...</p>
             )}
           </div>
         </div>
@@ -369,25 +408,25 @@ const Library = () => {
 
       {showCompressionSuccess && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-7 flex flex-col justify-center items-center gap-3 shadow-xl w-[320px]">
-            <p className="text-gray-900 text-[16px] font-semibold">
+          <div className="bg-surface rounded-2xl p-7 flex flex-col justify-center items-center gap-3 shadow-xl w-[320px]">
+            <p className="text-ink-soft text-[16px] font-semibold">
               File compressed successfully
             </p>
 
             <img src={ReadHubImages.confettiIcon} alt="" />
 
-            <p className="text-gray-700 text-[15px]">
+            <p className="text-ink-soft text-[15px]">
               Saved {savedStoragePct}% storage
             </p>
           </div>
         </div>
       )}
       <div className="flex justify-between mb-8 items-center">
-        <p className="text-black text-tittle_Large">Library</p>
+        <p className="text-ink text-tittle_Large">Library</p>
 
         <label
           htmlFor="fileselect2"
-          className="flex w-[40px] h-[40px] rounded-[8.04] bg-white justify-center items-center"
+          className="flex w-[40px] h-[40px] rounded-[8.04] bg-surface justify-center items-center"
         >
           <input
             type="file"
@@ -407,19 +446,41 @@ const Library = () => {
         </label>
       </div>
 
-      <div className="bg-white h-[46px] w-full flex rounded-[11px] mb-4">
-        <img src="/Variant3.svg" alt="search" className="w-[24px] mx-4" />
+      {/*
+        The search box.
+
+        It had no `value` and no `onChange`, so `searchQuery` never changed and
+        the filter below it -- which was written and working -- never ran:
+        typing in here did nothing at all. The input also carried an inline
+        white background and did not grow, so the text sat in a narrow strip of
+        the row and the box stayed white in dark mode.
+      */}
+      <div className="mb-4 flex h-[46px] w-full items-center gap-3 rounded-[11px] border border-line bg-surface px-4 focus-within:border-brand">
+        <FiSearch size={18} className="shrink-0 text-[var(--ink-faint)]" aria-hidden="true" />
         <input
-          type="text"
-          placeholder="Search books..."
-          style={{ backgroundColor: 'white', border: '0px' }}
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Search by title or author"
+          aria-label="Search your library"
+          className="min-w-0 flex-1 bg-transparent text-body_Medium text-ink outline-none placeholder:text-[var(--ink-faint)]"
         />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            aria-label="Clear search"
+            className="shrink-0 rounded-full p-1 text-[var(--ink-faint)] transition-colors hover:bg-surface-variant hover:text-ink"
+          >
+            <FiX size={16} />
+          </button>
+        )}
       </div>
 
       <div className="flex justify-between text-body_Small font-medium mb-4">
         <label
           htmlFor="fileselect"
-          className="h-[38px] xsm:w-[160px] w-[171px] border-1 rounded-[33px]  border-[#4b6481] flex justify-center items-center active:bg-black/10"
+          className="h-[38px] xsm:w-[160px] w-[171px] border-1 rounded-[33px]  border-[var(--ink-soft)] flex justify-center items-center active:bg-black/10"
         >
           <input
             type="file"
@@ -431,17 +492,45 @@ const Library = () => {
           <img src="/Variant3c.svg" alt="icon" className="w-[24px]" />
           <p>Upload book</p>
         </label>
-        <div className="h-[38px] w-[171px] xsm:w-[160px] border-1 rounded-[33px] border-[#4b6481] flex justify-center items-center">
+        <div className="h-[38px] w-[171px] xsm:w-[160px] border-1 rounded-[33px] border-[var(--ink-soft)] flex justify-center items-center">
           <img src="/Variant3b.svg" alt="icon" className="w-[24px]" />
           <p>Scan Cover</p>
         </div>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto mb-6" aria-label="Filter books by category">
-        <button type="button" onClick={() => setCategoryFilter('All categories')} className={`shrink-0 px-4 py-2 rounded-full bg-white ${categoryFilter === 'All categories' ? 'text-black' : 'text-[#4B6481]'}`}>All categories</button>
-        {categories.map((category) => (
-          <button type="button" key={category} onClick={() => setCategoryFilter(category)} className={`shrink-0 px-4 py-2 rounded-full bg-white text-left ${categoryFilter === category ? 'text-black' : 'text-[#4B6481]'}`}>{category}</button>
-        ))}
+      {/*
+        The category filter.
+
+        The chips were all the same white with only the text colour changing,
+        so the selected one was almost impossible to pick out, and they were
+        hardcoded light colours that ignored the theme. The selected chip now
+        carries the brand, and `aria-pressed` says which is on for anyone not
+        reading the colour.
+      */}
+      <div
+        className="no-scrollbar mb-6 flex gap-2 overflow-x-auto pb-1"
+        role="group"
+        aria-label="Filter books by category"
+      >
+        {['All categories', ...categories].map((option) => {
+          const selected = categoryFilter === option;
+
+          return (
+            <button
+              type="button"
+              key={option}
+              onClick={() => setCategoryFilter(option)}
+              aria-pressed={selected}
+              className={`shrink-0 rounded-full px-4 py-2 text-label_Large transition-colors ${
+                selected
+                  ? 'bg-brand font-semibold text-white'
+                  : 'bg-surface text-[var(--ink-soft)] hover:bg-surface-variant hover:text-ink'
+              }`}
+            >
+              {option}
+            </button>
+          );
+        })}
       </div>
 
       <div>
@@ -453,7 +542,7 @@ const Library = () => {
                   <div
                     key={index}
                     onClick={() => setActiveFilter(f)}
-                    className={`bg-white w-[91px] h-[38px] rounded-[33px] flex justify-center items-center ${activeFilter !== f ? 'text-[#4B6481]' : 'text-black'}`}
+                    className={`bg-surface w-[91px] h-[38px] rounded-[33px] flex justify-center items-center ${activeFilter !== f ? 'text-[var(--ink-soft)]' : 'text-ink'}`}
                   >
                     {`${f}(${filterBooks(files, f.toLocaleLowerCase()).length})`}
                   </div>
@@ -479,6 +568,9 @@ const Library = () => {
                   onCategoryChange={(category) => setBookCategory(book._id, category)}
                   onDelete={() => handleDelete(book._id)}
                   showDelete={true}
+                  isPublic={Boolean(book.isPublic)}
+                  onToggleShare={() => handleToggleShare(book)}
+                  isSharing={sharingId === book._id}
                 />
               );
             })}

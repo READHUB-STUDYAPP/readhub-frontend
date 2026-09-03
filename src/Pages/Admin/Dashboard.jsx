@@ -7,6 +7,11 @@ import { apiEndpoints } from '../../Util/apiEndpoints';
 const Dashboard = () => {
   const navigate = useNavigate();
   const [overview, setOverview] = useState(null);
+  const [admin, setAdmin] = useState(null);
+  const [invites, setInvites] = useState([]);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteUrl, setInviteUrl] = useState('');
+  const [inviteLoading, setInviteLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -19,8 +24,16 @@ const Dashboard = () => {
       }
 
       try {
-        const response = await axiosConfig.get(apiEndpoints.ADMIN_OVERVIEW);
-        if (mounted) setOverview(response.data);
+        const [overviewResponse, adminResponse, invitesResponse] = await Promise.all([
+          axiosConfig.get(apiEndpoints.ADMIN_OVERVIEW),
+          axiosConfig.get(apiEndpoints.ADMIN_ME),
+          axiosConfig.get(apiEndpoints.ADMIN_INVITES),
+        ]);
+        if (mounted) {
+          setOverview(overviewResponse.data);
+          setAdmin(adminResponse.data.admin);
+          setInvites(invitesResponse.data.invites || []);
+        }
       } catch (requestError) {
         if (!mounted) return;
 
@@ -50,6 +63,32 @@ const Dashboard = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
     navigate('/admin/login', { replace: true });
+  };
+
+  const handleInvite = async (event) => {
+    event.preventDefault();
+    setError('');
+    setInviteUrl('');
+    setInviteLoading(true);
+    try {
+      const response = await axiosConfig.post(apiEndpoints.ADMIN_INVITE, {
+        email: inviteEmail.trim().toLowerCase(),
+      });
+      setInviteEmail('');
+      setInviteUrl(response.data.invite?.acceptUrl || response.data.acceptUrl || '');
+      const invitesResponse = await axiosConfig.get(apiEndpoints.ADMIN_INVITES);
+      setInvites(invitesResponse.data.invites || []);
+    } catch (requestError) {
+      if ([401, 403].includes(requestError.response?.status)) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        navigate('/admin/login', { replace: true });
+        return;
+      }
+      setError(requestError.response?.data?.message || 'Unable to create invitation.');
+    } finally {
+      setInviteLoading(false);
+    }
   };
 
   if (!overview) {
@@ -84,7 +123,7 @@ const Dashboard = () => {
 
           <div className="bottom profileDetails flex flex-col gap-6 justify-center items-start">
             <div className=' w-full text-white'><hr/></div>
-            <div className='flex flex-row items-center gap-4'><div className='w-9 h-9'><img src={ReadHubImages.blankCircleSvgIcon} alt="" /></div><div className='flex flex-col'><span className='text-sm text-gray-50 font-medium'>Best Quality</span><span className='text-xs text-gray-50 font-light'>Admin</span></div></div>
+            <div className='flex flex-row items-center gap-4'><div className='w-9 h-9'><img src={admin?.profilePicture || ReadHubImages.blankCircleSvgIcon} alt="" /></div><div className='flex flex-col'><span className='text-sm text-gray-50 font-medium'>{admin?.username || 'Admin'}</span><span className='text-xs text-gray-50 font-light'>{admin?.role || 'admin'}</span></div></div>
             <button type="button" onClick={handleLogout} className='flex flex-row gap-10 items-center'><span className='w-3 h-3'><img src={ReadHubImages.logoutSvgIcon} alt="" /></span><span className='text-xs text-gray-50'>Logout</span></button>
           </div>
         </div>
@@ -143,6 +182,20 @@ const Dashboard = () => {
                 </div>
                 ))}</div>
             </div>
+
+            <section className="px-7 pt-8 pb-10">
+              <div className="bg-white border border-blue-200 rounded-lg p-6 max-w-5xl">
+                <div className="flex flex-row justify-between items-start gap-4 mb-5">
+                  <div><h2 className="text-lg font-medium text-gray-900">Admin access</h2><p className="text-sm text-gray-500 mt-1">Invite another administrator to ReadHub.</p></div>
+                </div>
+                <form onSubmit={handleInvite} className="flex flex-row gap-3 max-w-xl">
+                  <input aria-label="Admin email" type="email" required value={inviteEmail} onChange={(event) => setInviteEmail(event.target.value)} placeholder="admin@example.com" className="form-control flex-1" />
+                  <button type="submit" disabled={inviteLoading} className="rounded-lg bg-blue-500 px-4 py-2 text-sm text-white font-medium disabled:opacity-60">{inviteLoading ? 'Sending...' : 'Send invite'}</button>
+                </form>
+                {inviteUrl && <p className="mt-4 text-xs text-gray-600 break-all">Invite link: <a className="text-blue-600 underline" href={inviteUrl}>{inviteUrl}</a></p>}
+                {invites.length > 0 && <div className="mt-5 border-t pt-4"><p className="text-sm font-medium text-gray-800 mb-2">Pending invitations</p>{invites.map((invite) => <div key={`${invite.email}-${invite.createdAt}`} className="flex flex-row justify-between gap-4 text-sm text-gray-600 py-1"><span>{invite.email}</span><span>Expires {new Date(invite.expiresAt).toLocaleDateString()}</span></div>)}</div>}
+              </div>
+            </section>
         </div>
 
       </div>

@@ -1,18 +1,75 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useFiles } from "../Context/FileContext";
+import { backendApi } from "../services/api";
 
 import EpubReader from "../Components/EpubReader";
 
 const ViewEpub = () => {
-  const { selectedFile2 } = useFiles();
+  const { fileId } = useParams();
+  const { selectedFile2, files, fetchBooks, setSelectedFile } = useFiles();
+  const [book, setBook] = useState(selectedFile2);
+  const [bookError, setBookError] = useState(null);
   const readerRef = useRef(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  /**
+   * Leaves the book for wherever the reader came from -- a group, most often,
+   * rather than their own library, which is where this used to send them.
+   * `key` is 'default' only on the first entry in this session's history,
+   * where there is nothing to go back to.
+   */
+  const goBack = () => {
+    if (location.key !== "default") navigate(-1);
+    else navigate("/library");
+  };
 
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [darkToggle, setDarkToggle] = useState(false);
   const [toggleSettings, setToggleSettings] = useState(true);
   const [scaleFont, setScaleFont] = useState(14);
+
+  useEffect(() => {
+    if (book?._id === fileId || book?.id === fileId) return;
+
+    const cachedBook = files.find((item) => String(item._id) === String(fileId));
+    if (cachedBook) {
+      setBook(cachedBook);
+      setSelectedFile(cachedBook);
+      return;
+    }
+
+    const loadBook = async () => {
+      try {
+        await fetchBooks();
+        const response = await backendApi.getBooks();
+        const loadedBook = (Array.isArray(response) ? response : response.books || [])
+          .find((item) => String(item._id) === String(fileId));
+        if (loadedBook) {
+          setBook(loadedBook);
+          setSelectedFile(loadedBook);
+        } else {
+          setBookError("The selected EPUB book could not be found.");
+        }
+      } catch (error) {
+        console.error("Unable to load EPUB book", error);
+        setBookError("Unable to load the selected EPUB book.");
+      }
+    };
+
+    loadBook();
+  }, [book, fetchBooks, fileId, files, setSelectedFile]);
+
+  if (bookError) {
+    return (
+      <div className="w-full h-dvh flex flex-col items-center justify-center gap-4">
+        <p className="text-red-500">{bookError}</p>
+        <Link to="/library" className="text-primary">Back to library</Link>
+      </div>
+    );
+  }
 
   const increaseFont = () => {
     setScaleFont((prev) => Math.min(prev + 2, 30));
@@ -31,14 +88,14 @@ const ViewEpub = () => {
   };
   return (
     <div
-      className={`w-full h-full bg-fixed overflow-hidden   ${darkToggle ? "bg-[#0B111E] text-[#ECF0F8]" : "bg-white text-[black]"}`}
+      className={`w-full h-full bg-fixed overflow-hidden   ${darkToggle ? "bg-[#0B111E] text-[#ECF0F8]" : "bg-surface text-[black]"}`}
     >
       <div
-        className={`flex justify-between p-4 w-full fixed z-10 items-center ${darkToggle ? "bg-[#0B111E] stroke-primary" : "bg-white stroke-[#1A1A1A]"}`}
+        className={`flex justify-between p-4 w-full fixed z-10 items-center ${darkToggle ? "bg-[#0B111E] stroke-primary" : "bg-surface stroke-[#1A1A1A]"}`}
       >
         <div className="flex items-center">
-          <Link to="/library">
-            <button className="flex items-center gap-1">
+          <button type="button" onClick={goBack} aria-label="Close the book">
+            <div className="flex items-center gap-1">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -53,8 +110,8 @@ const ViewEpub = () => {
                   stroke-linejoin="round"
                 />
               </svg>
-            </button>
-          </Link>
+            </div>
+          </button>
         </div>
 
         <div className="flex gap-6">
@@ -172,9 +229,8 @@ const ViewEpub = () => {
       <div className="top-15 relative">
         <div className="px-4 ">
           <h2 className="text-tittle_Medium font-medium text-[14px] leading-[20px] truncate">
-            {selectedFile2.metadata?.title || selectedFile2.name}{" "}
-            {selectedFile2.metadata?.author &&
-              ` - ${selectedFile2.metadata.author}`}
+            {book?.metadata?.title || book?.title || book?.name || "Book"}{" "}
+            {book?.metadata?.author && ` - ${book.metadata.author}`}
           </h2>
           <h2 className="font-bold text-[20px] leading-[185%] pb-5">
             Page {page} of {total || "?"}
@@ -185,7 +241,7 @@ const ViewEpub = () => {
 
           <EpubReader
             ref={readerRef}
-            file={selectedFile2}
+            file={book}
             fontSize={scaleFont}
             theme={darkToggle ? "dark" : "light"}
             onLocationChange={({ current, total }) => {
@@ -200,7 +256,7 @@ const ViewEpub = () => {
         className={`bg-black/20 w-dvw h-dvh fixed z-11 flex items-baseline-last transition-all duration-300 ${toggleSettings ? "top-[100vh]" : "top-0"}`}
       >
         <div
-          className={`w-dvw h-[50vh] relative rounded-t-[32px] p-[24px] flex flex-col gap-6  ${darkToggle ? "bg-[#011532]" : "bg-white"}`}
+          className={`w-dvw h-[50vh] relative rounded-t-[32px] p-[24px] flex flex-col gap-6  ${darkToggle ? "bg-[#011532]" : "bg-surface"}`}
         >
           <div
             className={`flex  justify-between ${darkToggle ? "text-[#F5F9FF] stroke-[#F5F9FF]" : "text-[#333333] stroke-[#333333]"}`}
