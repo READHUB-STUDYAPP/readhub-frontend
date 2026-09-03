@@ -146,6 +146,32 @@ const EpubReader = forwardRef(
           });
           renditionRef.current = rendition;
 
+          /*
+            Keep a page inside its column.
+
+            In paginated flow epub.js gives each page a fixed column the height
+            of the viewer, and the viewer hides its overflow -- so anything the
+            book itself sizes larger than that column is simply cut off. Scanned
+            title pages and full-page plates are routinely sized in absolute
+            pixels or at 100% of a much taller original, which is why some pages
+            arrived with their bottom sliced away.
+
+            Bounding media to the column makes them fit it instead. The `!` is
+            needed because these compete with the book's own stylesheet, which
+            is more specific.
+          */
+          rendition.themes.default({
+            "img, image, svg, video": {
+              "max-width": "100% !important",
+              "max-height": "100% !important",
+              height: "auto !important",
+              "object-fit": "contain",
+            },
+            // A long unbroken word or URL would otherwise push the column wider
+            // than the page and take the text with it.
+            p: { "overflow-wrap": "break-word" },
+          });
+
           //Listen for location changes
           rendition.on("relocated", (location) => {
             if (!book.locations.total) return;
