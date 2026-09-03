@@ -8,19 +8,14 @@ import EpubReader from "../Components/EpubReader";
 
 const ViewEpub = () => {
   const { fileId } = useParams();
-  const { selectedFile2, files, fetchBooks, setSelectedFile } = useFiles();
+  const { selectedFile2, files, fetchBooks, setSelectedFile, updateCurrentPage } =
+    useFiles();
   const [book, setBook] = useState(selectedFile2);
   const [bookError, setBookError] = useState(null);
   const readerRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
-  /**
-   * Leaves the book for wherever the reader came from -- a group, most often,
-   * rather than their own library, which is where this used to send them.
-   * `key` is 'default' only on the first entry in this session's history,
-   * where there is nothing to go back to.
-   */
   // The keyboard, for when focus is on the page rather than inside the book's
   // own iframe (the reader handles that side itself).
   useEffect(() => {
@@ -45,6 +40,12 @@ const ViewEpub = () => {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  /**
+   * Leaves the book for wherever the reader came from -- a group, most often,
+   * rather than their own library, which is where this used to send them.
+   * `key` is 'default' only on the first entry in this session's history,
+   * where there is nothing to go back to.
+   */
   const goBack = () => {
     if (location.key !== "default") navigate(-1);
     else navigate("/library");
@@ -296,6 +297,22 @@ const ViewEpub = () => {
             onLocationChange={({ current, total }) => {
               setPage(current);
               setTotal(total);
+
+              /*
+                Record where the reader got to.
+
+                This reader kept its position in local state and nowhere else,
+                so an EPUB always reported nought pages read however long it
+                had been open -- and, needing a page above zero to qualify,
+                never appeared under "Continue reading" either. The PDF reader
+                has always done this; the EPUB one simply never did.
+
+                `updateCurrentPage` debounces the write, so turning pages
+                quickly does not send a request per page.
+              */
+              if (fileId && Number.isFinite(current) && current > 0) {
+                updateCurrentPage(fileId, current);
+              }
             }}
           />
         </div>

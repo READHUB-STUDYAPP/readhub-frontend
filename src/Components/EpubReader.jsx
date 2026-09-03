@@ -11,6 +11,7 @@ import { baseURL, apiEndpoints } from "../Util/apiEndpoints";
 const EpubReader = forwardRef(
   ({ file, fontSize, theme, onLocationChange }, ref) => {
     const viewerRef = useRef(null);
+    const resizeCleanupRef = useRef(null);
     const bookRef = useRef(null);
     const renditionRef = useRef(null);
 
@@ -197,6 +198,25 @@ const EpubReader = forwardRef(
               console.warn("Unable to generate EPUB locations", locationError);
             });
 
+          /*
+            Re-lay-out when the window changes size.
+
+            The column geometry is measured once at render. Without this, a
+            resized or rotated window leaves the pages measured for the old
+            size -- text clipped at the fold, and page turns that appear to do
+            nothing because the column being scrolled to is no longer where the
+            layout thinks it is.
+          */
+          const onResize = () => {
+            try {
+              rendition.resize();
+            } catch {
+              // A resize during teardown is not worth reporting.
+            }
+          };
+          window.addEventListener("resize", onResize);
+          resizeCleanupRef.current = () => window.removeEventListener("resize", onResize);
+
           rendition?.hooks.content.register((contents) => {
             const doc = contents.document;
 
@@ -217,12 +237,20 @@ const EpubReader = forwardRef(
               out, and leaves the theme machinery alone.
             */
             contents.addStylesheetRules({
-              img: {
+              // `image` is the SVG element, not a typo: a cover is very often
+              // an <svg> wrapping an <image> with the original's pixel
+              // dimensions on it, which is exactly the case that was being
+              // clipped -- an `img` rule never touches it.
+              "img, image, svg, video": {
                 "max-width": "100%",
                 "max-height": "100%",
+                width: "auto",
                 height: "auto",
+                "object-fit": "contain",
               },
-              svg: { "max-width": "100%", "max-height": "100%" },
+              // The body of a full-page image section carries no margin of its
+              // own, so the image has the whole column to fit into.
+              "body, html": { margin: "0", padding: "0" },
             });
             let touchStartX = 0;
             let touchStartY = 0;
@@ -298,6 +326,8 @@ const EpubReader = forwardRef(
 
       return () => {
         mounted = false;
+        resizeCleanupRef.current?.();
+        resizeCleanupRef.current = null;
         try {
           renditionRef.current?.destroy();
         } catch (e) {
