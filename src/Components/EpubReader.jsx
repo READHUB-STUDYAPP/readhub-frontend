@@ -146,31 +146,6 @@ const EpubReader = forwardRef(
           });
           renditionRef.current = rendition;
 
-          /*
-            Keep a page inside its column.
-
-            In paginated flow epub.js gives each page a fixed column the height
-            of the viewer, and the viewer hides its overflow -- so anything the
-            book itself sizes larger than that column is simply cut off. Scanned
-            title pages and full-page plates are routinely sized in absolute
-            pixels or at 100% of a much taller original, which is why some pages
-            arrived with their bottom sliced away.
-
-            Bounding media to the column makes them fit it instead. The `!` is
-            needed because these compete with the book's own stylesheet, which
-            is more specific.
-          */
-          rendition.themes.default({
-            "img, image, svg, video": {
-              "max-width": "100% !important",
-              "max-height": "100% !important",
-              height: "auto !important",
-              "object-fit": "contain",
-            },
-            // A long unbroken word or URL would otherwise push the column wider
-            // than the page and take the text with it.
-            p: { "overflow-wrap": "break-word" },
-          });
 
           //Listen for location changes
           rendition.on("relocated", (location) => {
@@ -224,6 +199,31 @@ const EpubReader = forwardRef(
 
           rendition?.hooks.content.register((contents) => {
             const doc = contents.document;
+
+            /*
+              Keep a page inside its column.
+
+              In paginated flow each page is a column the height of the viewer,
+              and the viewer hides its overflow -- so anything the book sizes
+              larger than that column is sliced away. Scanned title pages and
+              full-page plates are routinely sized in absolute pixels, which is
+              why some pages arrived with their bottoms missing.
+
+              Added to the section's own stylesheet rather than through
+              `themes`: themes are re-injected whenever the font size or the
+              dark toggle changes, and doing it there disturbed the column
+              layout enough that pages stopped advancing on screen even as the
+              location moved. This runs once per section, before it is laid
+              out, and leaves the theme machinery alone.
+            */
+            contents.addStylesheetRules({
+              img: {
+                "max-width": "100%",
+                "max-height": "100%",
+                height: "auto",
+              },
+              svg: { "max-width": "100%", "max-height": "100%" },
+            });
             let touchStartX = 0;
             let touchStartY = 0;
 
