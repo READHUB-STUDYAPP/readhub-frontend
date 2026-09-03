@@ -46,7 +46,8 @@ function PromoPanel() {
   const slide = SLIDES[index];
 
   return (
-    <div className="hidden w-[46%] shrink-0 flex-col items-center justify-between rounded-l-lg bg-brand p-8 text-white md:flex">
+    <div className="hidden w-[46%] shrink-0 flex-col items-center justify-between rounded-l-lg p-8 text-white md:flex"
+      style={{ backgroundColor: 'var(--brand-500)' }}>
       <p className="text-headline_Small font-extrabold">Welcome to ReadHub!</p>
 
       {/* Fixed height, so the panel does not resize as the slides change --
@@ -149,7 +150,7 @@ export function AuthButton({ children, loading, ...props }) {
       type="submit"
       disabled={loading || props.disabled}
       {...props}
-      className="w-full rounded-full bg-brand py-3 text-body_Medium font-bold text-white transition-colors hover:bg-brand-strong disabled:opacity-60"
+      className="w-full rounded-full bg-brand py-3 text-body_Medium font-bold text-ink-on-brand transition-colors hover:bg-brand-strong disabled:opacity-60"
     >
       {loading ? 'Please wait…' : children}
     </button>

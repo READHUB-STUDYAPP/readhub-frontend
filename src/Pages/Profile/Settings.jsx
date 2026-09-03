@@ -276,7 +276,7 @@ const Settings = () => {
           type="button"
           onClick={onSave}
           disabled={isSaving || !valid}
-          className="rounded-full bg-brand py-3 text-body_Medium font-bold text-white transition-colors hover:bg-brand-strong disabled:opacity-60 animate-[fadeIn_160ms_ease-out]"
+          className="rounded-full bg-brand py-3 text-body_Medium font-bold text-ink-on-brand transition-colors hover:bg-brand-strong disabled:opacity-60 animate-[fadeIn_160ms_ease-out]"
         >
           {isSaving ? 'Saving...' : 'Save changes'}
         </button>

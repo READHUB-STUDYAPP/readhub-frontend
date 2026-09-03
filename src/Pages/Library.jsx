@@ -531,7 +531,7 @@ const Library = () => {
               aria-pressed={selected}
               className={`shrink-0 rounded-full px-4 py-2 text-label_Large transition-colors ${
                 selected
-                  ? 'bg-brand font-semibold text-white'
+                  ? 'bg-brand font-semibold text-ink-on-brand'
                   : 'bg-surface text-[var(--ink-soft)] hover:bg-surface-variant hover:text-ink'
               }`}
             >
