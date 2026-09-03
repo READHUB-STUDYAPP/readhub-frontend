@@ -1,33 +1,48 @@
-import React, { useState } from 'react'
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { validateEmail } from '../Auth/validate';
-import axiosConfig from '../../Util/axiosConfig';
-import { apiEndpoints, baseURL } from '../../Util/apiEndpoints';
-import { LuEye, LuEyeOff, LuLoaderCircle } from 'react-icons/lu';
 
-const AdminLogin = () => {
+import AuthLayout, { AuthButton, AuthField } from '../../Components/AuthLayout';
+import { apiEndpoints, baseURL } from '../../Util/apiEndpoints';
+import { authInputClass } from '../../Util/authStyles';
+import axiosConfig from '../../Util/axiosConfig';
+import { storeSession } from '../../Util/session';
+
+const validateEmail = (value) => /\S+@\S+\.\S+/.test(String(value).trim());
+
+/**
+ * Signing in to the admin panel.
+ *
+ * The same form as the reader's sign-in, in the same layout, with a tag saying
+ * which door this is -- an admin panel that looks like a different product
+ * suggests a different account, and it is not: there is no separate admin
+ * sign-in on the server. An admin signs in through the ordinary endpoint and
+ * `requireAdmin` gates the panel by the role held in the database.
+ *
+ * Which is why the role is checked twice here. The token says what the server
+ * put in it, but `admin/me` is the server answering the actual question, and
+ * that is the one worth trusting before showing anyone the panel.
+ */
+export default function AdminLogin() {
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (event) => {
+    event.preventDefault();
 
-    // Basic validation
     if (!validateEmail(email)) {
-      setError("Please enter a valid email address");
+      setError('Please enter a valid email address');
       return;
     }
     if (!password.trim()) {
-      setError("Please enter your password");
+      setError('Please enter your password');
       return;
     }
 
-    setError("");
+    setError('');
     setLoading(true);
 
     try {
@@ -35,129 +50,79 @@ const AdminLogin = () => {
         email: email.trim().toLowerCase(),
         password,
       });
+
       const { accessToken, role } = response.data;
+      if (!accessToken) throw new Error('The server did not return an access token.');
 
-      if (!accessToken) {
-        throw new Error("The server did not return an access token.");
-      }
+      storeSession(response.data);
 
-      localStorage.setItem("token", accessToken);
-
-      if (role !== "admin") {
-        localStorage.removeItem("token");
-        setError("This account does not have admin access.");
-        await axiosConfig.post(apiEndpoints.LOGOUT).catch(() => {});
+      if (role !== 'admin') {
+        localStorage.removeItem('token');
+        await axiosConfig.post(apiEndpoints.LOGOUT, {}).catch(() => {});
+        setError('This account does not have admin access.');
         return;
       }
 
-      // requireAdmin verifies the role from the database for protected routes.
+      // The server's own answer, not the token's claim about it.
       await axiosConfig.get(apiEndpoints.ADMIN_ME);
-      navigate("/admin/dashboard", { replace: true });
+      navigate('/admin/dashboard', { replace: true });
     } catch (err) {
       if ([401, 403].includes(err.response?.status)) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("refreshToken");
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
       }
+
       setError(
         err.response?.data?.message ||
           (err.request
             ? `Unable to reach the API at ${baseURL}${apiEndpoints.LOGIN}. Check that the backend is running and VITE_API_BASE_URL is correct.`
-            : err.message || "Authentication failed. Please check your credentials."),
+            : err.message || 'Authentication failed. Please check your credentials.'),
       );
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className='bg-gray-50 h-screen w-screen justify-center items-center p-20'>
-       <div className='bg-gray-100 border border-blue-400 p-4 max-w-5xl flex flex-col gap-5 justify-center items-center rounded-lg'>
-        <div className='text-gray-900 text-5xl font-semibold'><span>Login</span></div>
-        <form onSubmit={handleSubmit} className="signupForm">
-            <div className="inputFields">
-              <div className="field">
-                <label htmlFor="">Email</label>
-                <input
-                  type="text"
-                  id="email"
-                  className="form-control"
-                  placeholder="example@gmail.com"
-                  required
-                  onChange={(e) => setEmail(e.target.value)}
-                  value={email}
-                />
-              </div>
+    <AuthLayout variant="centred" title="Welcome Back" subtitle="Sign in to manage ReadHub">
+      <form onSubmit={onSubmit} className="flex flex-col gap-4">
+        {/* Which door this is. */}
+        <span className="self-center rounded-full bg-brand-wash px-3 py-1 text-label_Medium font-bold uppercase tracking-wide text-brand md:self-start">
+          Admin
+        </span>
 
-              <div className="field">
-                <label htmlFor="">Password</label>
-                <div style={{ position: "relative", width: "100%" }}>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    id="password"
-                    className="form-control"
-                    placeholder="********"
-                    required
-                    onChange={(e) => setPassword(e.target.value)}
-                    value={password}
-                    style={{ paddingRight: "44px" }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((s) => !s)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    style={{
-                      position: "absolute",
-                      right: "12px",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      background: "transparent",
-                      border: "none",
-                      padding: 0,
-                      cursor: "pointer",
-                      color: "#4d4d4d",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {showPassword ? <LuEyeOff size={18} /> : <LuEye size={18} />}
-                  </button>
-                </div>
-              </div>
+        <AuthField label="Email">
+          <input
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="you@readhub.study"
+            autoComplete="email"
+            className={authInputClass(false)}
+          />
+        </AuthField>
 
-              {error && (
-                <p
-                  className="errorText"
-                  style={{
-                    color: "red",
-                    alignItems: "center",
-                    backgroundColor: "none",
-                  }}
-                >
-                  {error}
-                </p>
-              )}
+        <AuthField label="Password" error={error}>
+          <input
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Your password"
+            autoComplete="current-password"
+            className={authInputClass(Boolean(error))}
+          />
+        </AuthField>
 
-              <button
-                disabled={loading}
-                className={`btn-primary bg-blue-400 rounded-lg text-white w-full py-3 text-lg font-medium flex items-center justify-center gap-2 ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
-                type="submit"
-              >
-                {loading ? (
-                  <>
-                    <LuLoaderCircle className="animate-spin w-4 h-4" />
-                    Signing In...
-                  </>
-                ) : (
-                  "Sign In"
-                )}
-              </button>
+        <AuthButton loading={loading}>Sign in</AuthButton>
 
-            </div>
-          </form>
-       </div>
-    </div>
-  )
+        <button
+          type="button"
+          onClick={() => navigate('/login')}
+          className="text-label_Large text-ink-soft transition-colors hover:text-ink"
+        >
+          Not an admin? Sign in as a reader
+        </button>
+      </form>
+    </AuthLayout>
+  );
 }
-
-export default AdminLogin

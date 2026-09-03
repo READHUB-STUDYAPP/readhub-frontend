@@ -273,7 +273,7 @@ export default function GroupComments() {
           type="submit"
           disabled={sending || !draft.trim()}
           aria-label="Post comment"
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-strong disabled:opacity-50"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-brand text-ink-on-brand transition-colors hover:bg-brand-strong disabled:opacity-50"
         >
           <FiSend size={18} />
         </button>

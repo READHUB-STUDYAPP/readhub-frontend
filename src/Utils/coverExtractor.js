@@ -194,3 +194,80 @@ export const extractEpubCover = async (epubDataUrl) => {
     return null;
   }
 };
+
+/**
+ * Draws a cover for a book that has none.
+ *
+ * EPUBs frequently carry no cover image, and the extractor above returns null
+ * for them. That null was fatal, not cosmetic: the server requires a
+ * `coverImageUrl` when saving a book, so every coverless EPUB was refused with
+ * "All fields are required" and the upload appeared to fail for no reason.
+ *
+ * The drawn cover also beats the generic placeholder the library used to show,
+ * since it carries the title and author and is different for each book.
+ */
+export const generateCoverImage = (title = "Untitled", author = "") => {
+  try {
+    const WIDTH = 400;
+    const HEIGHT = 600;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = WIDTH;
+    canvas.height = HEIGHT;
+
+    const context = canvas.getContext("2d");
+    if (!context) return null;
+
+    // A hue derived from the title, so a book keeps the same colour every time
+    // it is drawn and two books on a shelf rarely match.
+    let hash = 0;
+    for (let i = 0; i < title.length; i++) {
+      hash = (hash * 31 + title.charCodeAt(i)) % 360;
+    }
+
+    const gradient = context.createLinearGradient(0, 0, WIDTH, HEIGHT);
+    gradient.addColorStop(0, `hsl(${hash}, 62%, 46%)`);
+    gradient.addColorStop(1, `hsl(${(hash + 40) % 360}, 58%, 32%)`);
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, WIDTH, HEIGHT);
+
+    // The title, wrapped by hand: canvas has no text wrapping of its own.
+    context.fillStyle = "#ffffff";
+    context.font = "bold 34px Manrope, system-ui, sans-serif";
+    context.textAlign = "center";
+
+    const words = String(title).split(/\s+/);
+    const lines = [];
+    let line = "";
+
+    for (const word of words) {
+      const candidate = line ? `${line} ${word}` : word;
+      if (context.measureText(candidate).width > WIDTH - 64 && line) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = candidate;
+      }
+    }
+    if (line) lines.push(line);
+
+    // Six lines is what fits above the author without crowding it.
+    const shown = lines.slice(0, 6);
+    const startY = HEIGHT / 2 - (shown.length - 1) * 22 - 20;
+    shown.forEach((text, index) => {
+      context.fillText(text, WIDTH / 2, startY + index * 44);
+    });
+
+    if (author) {
+      context.font = "22px Manrope, system-ui, sans-serif";
+      context.fillStyle = "rgba(255, 255, 255, 0.85)";
+      context.fillText(String(author).slice(0, 40), WIDTH / 2, HEIGHT - 64);
+    }
+
+    // JPEG, because these are flat colour and text: a PNG of the same image is
+    // several times larger for no visible gain.
+    return canvas.toDataURL("image/jpeg", 0.85);
+  } catch {
+    return null;
+  }
+};

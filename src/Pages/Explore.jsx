@@ -386,7 +386,7 @@ export default function Explore() {
 
               <button
                 type="submit"
-                className="w-full rounded-2xl bg-brand px-4 py-2.5 text-body_Medium font-semibold text-white transition-colors hover:bg-brand-strong"
+                className="w-full rounded-2xl bg-brand px-4 py-2.5 text-body_Medium font-semibold text-ink-on-brand transition-colors hover:bg-brand-strong"
               >
                 Search books
               </button>
