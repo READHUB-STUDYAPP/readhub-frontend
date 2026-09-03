@@ -1,6 +1,7 @@
-import * as pdfjsLib from "pdfjs-dist";
-import pdfjsWorker from "pdfjs-dist/build/pdf.worker?url";
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+// Sets the worker for every reader of pdf.js in the app, this one included.
+// pdf.js itself is not imported here: this file is handed an already-open
+// document and only draws a page from it.
+import "./pdfWorker";
 
 /**
  * Extract Cover Image from PDF (first page as cover)

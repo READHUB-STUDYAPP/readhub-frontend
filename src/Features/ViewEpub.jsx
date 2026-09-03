@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useFiles } from "../Context/FileContext";
 import { backendApi } from "../services/api";
@@ -20,6 +21,30 @@ const ViewEpub = () => {
    * `key` is 'default' only on the first entry in this session's history,
    * where there is nothing to go back to.
    */
+  // The keyboard, for when focus is on the page rather than inside the book's
+  // own iframe (the reader handles that side itself).
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      const target = event.target;
+      const typing =
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
+      if (typing || event.metaKey || event.ctrlKey || event.altKey) return;
+
+      if (event.key === "ArrowRight" || event.key === "PageDown") {
+        event.preventDefault();
+        readerRef.current?.next();
+      } else if (event.key === "ArrowLeft" || event.key === "PageUp") {
+        event.preventDefault();
+        readerRef.current?.prev();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   const goBack = () => {
     if (location.key !== "default") navigate(-1);
     else navigate("/library");
@@ -236,8 +261,32 @@ const ViewEpub = () => {
             Page {page} of {total || "?"}
           </h2>
         </div>
-        <div>
-          {/* view epub */}
+        {/*
+          Page arrows, for a desktop.
+
+          Shown only where there is a real pointer: a phone turns pages by
+          swiping, which this reader already supports, and two buttons floating
+          over a small screen would cover the words being read. `hover: hover`
+          asks that question directly rather than guessing from width -- a
+          touchscreen laptop is wide and still wants them.
+        */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => readerRef.current?.prev()}
+            aria-label="Previous page"
+            className="fixed left-3 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-surface text-ink shadow-raised transition-colors hover:bg-surface-variant [@media(hover:hover)]:flex"
+          >
+            <FiChevronLeft size={22} />
+          </button>
+          <button
+            type="button"
+            onClick={() => readerRef.current?.next()}
+            aria-label="Next page"
+            className="fixed right-3 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-surface text-ink shadow-raised transition-colors hover:bg-surface-variant [@media(hover:hover)]:flex"
+          >
+            <FiChevronRight size={22} />
+          </button>
 
           <EpubReader
             ref={readerRef}

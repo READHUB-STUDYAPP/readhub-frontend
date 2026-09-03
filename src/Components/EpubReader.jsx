@@ -166,16 +166,54 @@ const EpubReader = forwardRef(
 
           if (mounted) setIsLoading(false);
 
-          // Location generation is only needed for page navigation and can be
-          // expensive for large EPUBs. Do not block the initial render on it.
-          book.locations.generate(1024).catch((locationError) => {
-            console.warn("Unable to generate EPUB locations", locationError);
-          });
+          /*
+            Locations are what give an EPUB a page count, and generating them
+            is expensive on a large book -- so it stays off the path that gets
+            the first page on screen.
+
+            The result has to be announced when it arrives, though. `relocated`
+            fires while this is still running, finds no total, and returns
+            early; nothing emitted afterwards, so the header sat on "Page 1 of
+            ?" for the whole session however many pages the book had. Emitting
+            once here, from wherever the reader currently is, fills it in the
+            moment the count exists.
+          */
+          book.locations
+            .generate(1024)
+            .then(() => {
+              if (!mounted) return;
+
+              const cfi = rendition.currentLocation()?.start?.cfi;
+              const total = book.locations.total;
+              if (!cfi || !total) return;
+
+              onLocationChange?.({
+                current: book.locations.locationFromCfi(cfi) + 1,
+                total,
+              });
+            })
+            .catch((locationError) => {
+              console.warn("Unable to generate EPUB locations", locationError);
+            });
 
           rendition?.hooks.content.register((contents) => {
             const doc = contents.document;
             let touchStartX = 0;
             let touchStartY = 0;
+
+            // The book renders in an iframe, so once a reader clicks into the
+            // text the arrow keys go to that document and never reach the page.
+            // Each rendered section gets the same handler, so the keys work
+            // wherever the focus happens to be.
+            doc.addEventListener("keydown", (event) => {
+              if (event.key === "ArrowRight" || event.key === "PageDown") {
+                event.preventDefault();
+                renditionRef.current?.next();
+              } else if (event.key === "ArrowLeft" || event.key === "PageUp") {
+                event.preventDefault();
+                renditionRef.current?.prev();
+              }
+            });
 
             doc.addEventListener(
               "touchstart",

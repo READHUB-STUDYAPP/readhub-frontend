@@ -13,7 +13,7 @@ import EpubReader from '../Components/EpubReader';
 import { highlightTextInPDF } from '../Components/HighlightRenderer';
 import { toast } from 'react-toastify';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+import '../Utils/pdfWorker';
 
 const ViewPdf = () => {
   const { fileId } = useParams();
