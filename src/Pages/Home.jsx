@@ -234,7 +234,10 @@ const Home = () => {
       </div>
 
       <div className="px-[16px] pb-[26px] xsm:text-[15px]">
-        <div className="bg-primary min-h-[177px] rounded-[20px] relative overflow-hidden text-white px-[16px] py-[23px] flex flex-col justify-between">
+        <div
+          className="min-h-[177px] rounded-[20px] relative overflow-hidden text-white px-[16px] py-[23px] flex flex-col justify-between"
+          style={{ backgroundColor: 'var(--brand-500)' }}
+        >
           <span className="flex h-[100px] w-[100px] bg-white/20 rounded-full absolute left-72 top-[-30px]"></span>
           <span className="flex h-[100px] w-[100px] bg-white/20 rounded-full absolute top-30 left-[-40px]"></span>
           <div className="flex items-center">

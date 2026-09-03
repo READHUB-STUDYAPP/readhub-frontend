@@ -93,7 +93,7 @@ export default function Groups() {
           type="button"
           onClick={() => setPanel(panel === 'create' ? 'none' : 'create')}
           aria-expanded={panel === 'create'}
-          className="flex items-center gap-2 rounded-md bg-brand px-4 py-2.5 text-body_Medium font-semibold text-white transition-colors hover:bg-brand-strong"
+          className="flex items-center gap-2 rounded-md bg-brand px-4 py-2.5 text-body_Medium font-semibold text-ink-on-brand transition-colors hover:bg-brand-strong"
         >
           <FiPlus size={16} /> New group
         </button>
@@ -120,7 +120,7 @@ export default function Groups() {
           <button
             type="submit"
             disabled={busy || !name.trim()}
-            className="rounded-full bg-brand py-2.5 text-body_Medium font-bold text-white disabled:opacity-60"
+            className="rounded-full bg-brand py-2.5 text-body_Medium font-bold text-ink-on-brand disabled:opacity-60"
           >
             Create group
           </button>
@@ -146,7 +146,7 @@ export default function Groups() {
           <button
             type="submit"
             disabled={busy || !code.trim()}
-            className="rounded-full bg-brand py-2.5 text-body_Medium font-bold text-white disabled:opacity-60"
+            className="rounded-full bg-brand py-2.5 text-body_Medium font-bold text-ink-on-brand disabled:opacity-60"
           >
             Join group
           </button>
