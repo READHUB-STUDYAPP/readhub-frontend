@@ -144,6 +144,23 @@ const EpubReader = forwardRef(
             height: "100%",
             spread: "none",
             flow: "paginated",
+            /*
+              The continuous manager, for turns that do not stutter.
+
+              The default manager holds one section at a time, so every turn
+              that crosses a chapter boundary unloads the current document and
+              parses the next one -- a visible pause and a flash, on exactly
+              the action a reader performs most. The continuous manager keeps
+              the neighbouring sections rendered either side of the one being
+              read, so a turn is a move within what is already there.
+
+              It costs some memory for pages nobody is looking at. That is the
+              right trade for the one interaction that happens hundreds of
+              times in a sitting.
+            */
+            manager: "continuous",
+            // Do not let the book run its own scripts in our page.
+            allowScriptedContent: false,
           });
           renditionRef.current = rendition;
 
