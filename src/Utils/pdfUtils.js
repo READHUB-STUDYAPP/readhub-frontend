@@ -1,6 +1,6 @@
 import { pdfjs } from "react-pdf";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+import './pdfWorker';
 
 const base64ToArrayBuffer = (base64) => {
   const base64String = base64.includes(",") ? base64.split(",")[1] : base64;

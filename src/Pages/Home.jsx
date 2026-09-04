@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { apiEndpoints } from "../Util/apiEndpoints";
 import axiosConfig from "../Util/axiosConfig";
 import LoadingContCard from "../Components/LoadingContCard";
+import { isReading, pageOf } from "../Util/readingProgress";
 
 /**
  * The shortcuts under the reading goal.
@@ -99,10 +100,9 @@ const Home = () => {
   };
 
   function filterBooks(books) {
-    return books.filter((b) => {
-      const page = currentPage[b._id] ?? b.lastPageRead ?? 0;
-      return page > 0 && page < b.pages;
-    });
+    // Shared with the library, so the two screens cannot disagree about what
+    // "still reading" means -- and so a book of unknown length still counts.
+    return books.filter((b) => isReading(b, pageOf(b, currentPage)));
   }
 
   const filtered = filterBooks(files);

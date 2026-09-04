@@ -1,18 +1,71 @@
 import React, { useRef, useState, useEffect } from "react";
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useFiles } from "../Context/FileContext";
+import axiosConfig from "../Util/axiosConfig";
+import { apiEndpoints } from "../Util/apiEndpoints";
 import { backendApi } from "../services/api";
 
 import EpubReader from "../Components/EpubReader";
 
 const ViewEpub = () => {
   const { fileId } = useParams();
-  const { selectedFile2, files, fetchBooks, setSelectedFile } = useFiles();
+  const {
+    selectedFile2,
+    files,
+    fetchBooks,
+    setSelectedFile,
+    updateCurrentPage,
+    startLocalReadingTimer,
+    stopLocalReadingTimer,
+  } = useFiles();
   const [book, setBook] = useState(selectedFile2);
   const [bookError, setBookError] = useState(null);
   const readerRef = useRef(null);
+  const sessionIdRef = useRef(null);
+
+  /*
+    Where this reader stopped, as a CFI.
+
+    An EPUB has no pages to count -- a position is a CFI, and only a CFI puts
+    a reader back on the exact line. The server keeps the location number,
+    which is what progress and the reading stats are made of and what another
+    device can use; this is the precise place, and it belongs to this browser.
+  */
+  const placeKey = fileId ? `rh_epub_place:${fileId}` : null;
+  const [resumeCfi] = useState(() => {
+    try {
+      return placeKey ? localStorage.getItem(placeKey) : null;
+    } catch {
+      return null;
+    }
+  });
   const navigate = useNavigate();
   const location = useLocation();
+
+  // The keyboard, for when focus is on the page rather than inside the book's
+  // own iframe (the reader handles that side itself).
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      const target = event.target;
+      const typing =
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
+      if (typing || event.metaKey || event.ctrlKey || event.altKey) return;
+
+      if (event.key === "ArrowRight" || event.key === "PageDown") {
+        event.preventDefault();
+        readerRef.current?.next();
+      } else if (event.key === "ArrowLeft" || event.key === "PageUp") {
+        event.preventDefault();
+        readerRef.current?.prev();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   /**
    * Leaves the book for wherever the reader came from -- a group, most often,
@@ -26,6 +79,7 @@ const ViewEpub = () => {
   };
 
   const [page, setPage] = useState(1);
+  const pageRef = useRef(1);
   const [total, setTotal] = useState(0);
   const [darkToggle, setDarkToggle] = useState(false);
   const [toggleSettings, setToggleSettings] = useState(true);
@@ -62,6 +116,47 @@ const ViewEpub = () => {
     loadBook();
   }, [book, fetchBooks, fileId, files, setSelectedFile]);
 
+  /*
+    A reading session, so time spent in an EPUB counts.
+
+    The PDF reader has always opened a session on the server and closed it on
+    the way out, and kept the local timer running meanwhile. This reader did
+    neither, so an hour with an EPUB added nothing to the day's reading and
+    nothing to the streak -- the reading was real and the record of it was
+    empty.
+  */
+  useEffect(() => {
+    if (!fileId) return;
+
+    let active = true;
+
+    axiosConfig
+      .post(apiEndpoints.BOOK_START_READING, { bookId: fileId, startPage: pageRef.current })
+      .then((res) => {
+        if (active) sessionIdRef.current = res?.data?.session?._id || null;
+      })
+      .catch(() => {
+        // Stats will simply not include this session; it is not worth
+        // interrupting someone's reading to say so.
+      });
+
+    startLocalReadingTimer(fileId);
+
+    return () => {
+      active = false;
+      stopLocalReadingTimer();
+
+      const sessionId = sessionIdRef.current;
+      sessionIdRef.current = null;
+      if (!sessionId) return;
+
+      axiosConfig
+        .post(apiEndpoints.BOOK_END_READING, { sessionId, endPage: pageRef.current })
+        .catch(() => {});
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileId]);
+
   if (bookError) {
     return (
       <div className="w-full h-dvh flex flex-col items-center justify-center gap-4">
@@ -79,6 +174,7 @@ const ViewEpub = () => {
     setScaleFont((prev) => Math.max(prev - 2, 14));
   };
 
+
   const jumpToPage = (page) => {
     if (readerRef.current) {
       readerRef.current.goToLocation(page);
@@ -88,7 +184,7 @@ const ViewEpub = () => {
   };
   return (
     <div
-      className={`w-full h-full bg-fixed overflow-hidden   ${darkToggle ? "bg-[#0B111E] text-[#ECF0F8]" : "bg-surface text-[black]"}`}
+      className={`flex h-dvh w-full flex-col overflow-hidden ${darkToggle ? "bg-[#0B111E] text-[#ECF0F8]" : "bg-surface text-[black]"}`}
     >
       <div
         className={`flex justify-between p-4 w-full fixed z-10 items-center ${darkToggle ? "bg-[#0B111E] stroke-primary" : "bg-surface stroke-[#1A1A1A]"}`}
@@ -226,7 +322,7 @@ const ViewEpub = () => {
           </div>
         </div>
       </div>
-      <div className="top-15 relative">
+      <div className="relative flex min-h-0 flex-1 flex-col pt-15">
         <div className="px-4 ">
           <h2 className="text-tittle_Medium font-medium text-[14px] leading-[20px] truncate">
             {book?.metadata?.title || book?.title || book?.name || "Book"}{" "}
@@ -236,17 +332,69 @@ const ViewEpub = () => {
             Page {page} of {total || "?"}
           </h2>
         </div>
-        <div>
-          {/* view epub */}
+        {/*
+          Page arrows, for a desktop.
+
+          Shown only where there is a real pointer: a phone turns pages by
+          swiping, which this reader already supports, and two buttons floating
+          over a small screen would cover the words being read. `hover: hover`
+          asks that question directly rather than guessing from width -- a
+          touchscreen laptop is wide and still wants them.
+        */}
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          <button
+            type="button"
+            onClick={() => readerRef.current?.prev()}
+            aria-label="Previous page"
+            className="fixed left-3 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-surface text-ink shadow-raised transition-colors hover:bg-surface-variant [@media(hover:hover)]:flex"
+          >
+            <FiChevronLeft size={22} />
+          </button>
+          <button
+            type="button"
+            onClick={() => readerRef.current?.next()}
+            aria-label="Next page"
+            className="fixed right-3 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-surface text-ink shadow-raised transition-colors hover:bg-surface-variant [@media(hover:hover)]:flex"
+          >
+            <FiChevronRight size={22} />
+          </button>
 
           <EpubReader
             ref={readerRef}
             file={book}
             fontSize={scaleFont}
             theme={darkToggle ? "dark" : "light"}
-            onLocationChange={({ current, total }) => {
+            resumeCfi={resumeCfi}
+            onLocationChange={({ current, total, cfi }) => {
               setPage(current);
               setTotal(total);
+              pageRef.current = current;
+
+              // The exact place, for reopening this book in this browser.
+              if (placeKey && cfi) {
+                try {
+                  localStorage.setItem(placeKey, cfi);
+                } catch {
+                  // Private browsing, or storage full. The location number
+                  // still goes to the server below.
+                }
+              }
+
+              /*
+                Record where the reader got to.
+
+                This reader kept its position in local state and nowhere else,
+                so an EPUB always reported nought pages read however long it
+                had been open -- and, needing a page above zero to qualify,
+                never appeared under "Continue reading" either. The PDF reader
+                has always done this; the EPUB one simply never did.
+
+                `updateCurrentPage` debounces the write, so turning pages
+                quickly does not send a request per page.
+              */
+              if (fileId && Number.isFinite(current) && current > 0) {
+                updateCurrentPage(fileId, current);
+              }
             }}
           />
         </div>
