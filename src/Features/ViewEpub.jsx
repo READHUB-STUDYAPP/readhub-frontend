@@ -2,17 +2,44 @@ import React, { useRef, useState, useEffect } from "react";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useFiles } from "../Context/FileContext";
+import axiosConfig from "../Util/axiosConfig";
+import { apiEndpoints } from "../Util/apiEndpoints";
 import { backendApi } from "../services/api";
 
 import EpubReader from "../Components/EpubReader";
 
 const ViewEpub = () => {
   const { fileId } = useParams();
-  const { selectedFile2, files, fetchBooks, setSelectedFile, updateCurrentPage } =
-    useFiles();
+  const {
+    selectedFile2,
+    files,
+    fetchBooks,
+    setSelectedFile,
+    updateCurrentPage,
+    startLocalReadingTimer,
+    stopLocalReadingTimer,
+  } = useFiles();
   const [book, setBook] = useState(selectedFile2);
   const [bookError, setBookError] = useState(null);
   const readerRef = useRef(null);
+  const sessionIdRef = useRef(null);
+
+  /*
+    Where this reader stopped, as a CFI.
+
+    An EPUB has no pages to count -- a position is a CFI, and only a CFI puts
+    a reader back on the exact line. The server keeps the location number,
+    which is what progress and the reading stats are made of and what another
+    device can use; this is the precise place, and it belongs to this browser.
+  */
+  const placeKey = fileId ? `rh_epub_place:${fileId}` : null;
+  const [resumeCfi] = useState(() => {
+    try {
+      return placeKey ? localStorage.getItem(placeKey) : null;
+    } catch {
+      return null;
+    }
+  });
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -52,6 +79,7 @@ const ViewEpub = () => {
   };
 
   const [page, setPage] = useState(1);
+  const pageRef = useRef(1);
   const [total, setTotal] = useState(0);
   const [darkToggle, setDarkToggle] = useState(false);
   const [toggleSettings, setToggleSettings] = useState(true);
@@ -88,6 +116,47 @@ const ViewEpub = () => {
     loadBook();
   }, [book, fetchBooks, fileId, files, setSelectedFile]);
 
+  /*
+    A reading session, so time spent in an EPUB counts.
+
+    The PDF reader has always opened a session on the server and closed it on
+    the way out, and kept the local timer running meanwhile. This reader did
+    neither, so an hour with an EPUB added nothing to the day's reading and
+    nothing to the streak -- the reading was real and the record of it was
+    empty.
+  */
+  useEffect(() => {
+    if (!fileId) return;
+
+    let active = true;
+
+    axiosConfig
+      .post(apiEndpoints.BOOK_START_READING, { bookId: fileId, startPage: pageRef.current })
+      .then((res) => {
+        if (active) sessionIdRef.current = res?.data?.session?._id || null;
+      })
+      .catch(() => {
+        // Stats will simply not include this session; it is not worth
+        // interrupting someone's reading to say so.
+      });
+
+    startLocalReadingTimer(fileId);
+
+    return () => {
+      active = false;
+      stopLocalReadingTimer();
+
+      const sessionId = sessionIdRef.current;
+      sessionIdRef.current = null;
+      if (!sessionId) return;
+
+      axiosConfig
+        .post(apiEndpoints.BOOK_END_READING, { sessionId, endPage: pageRef.current })
+        .catch(() => {});
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileId]);
+
   if (bookError) {
     return (
       <div className="w-full h-dvh flex flex-col items-center justify-center gap-4">
@@ -105,6 +174,7 @@ const ViewEpub = () => {
     setScaleFont((prev) => Math.max(prev - 2, 14));
   };
 
+
   const jumpToPage = (page) => {
     if (readerRef.current) {
       readerRef.current.goToLocation(page);
@@ -114,7 +184,7 @@ const ViewEpub = () => {
   };
   return (
     <div
-      className={`w-full h-full bg-fixed overflow-hidden   ${darkToggle ? "bg-[#0B111E] text-[#ECF0F8]" : "bg-surface text-[black]"}`}
+      className={`flex h-dvh w-full flex-col overflow-hidden ${darkToggle ? "bg-[#0B111E] text-[#ECF0F8]" : "bg-surface text-[black]"}`}
     >
       <div
         className={`flex justify-between p-4 w-full fixed z-10 items-center ${darkToggle ? "bg-[#0B111E] stroke-primary" : "bg-surface stroke-[#1A1A1A]"}`}
@@ -252,7 +322,7 @@ const ViewEpub = () => {
           </div>
         </div>
       </div>
-      <div className="top-15 relative">
+      <div className="relative flex min-h-0 flex-1 flex-col pt-15">
         <div className="px-4 ">
           <h2 className="text-tittle_Medium font-medium text-[14px] leading-[20px] truncate">
             {book?.metadata?.title || book?.title || book?.name || "Book"}{" "}
@@ -271,7 +341,7 @@ const ViewEpub = () => {
           asks that question directly rather than guessing from width -- a
           touchscreen laptop is wide and still wants them.
         */}
-        <div className="relative">
+        <div className="relative flex min-h-0 flex-1 flex-col">
           <button
             type="button"
             onClick={() => readerRef.current?.prev()}
@@ -294,9 +364,21 @@ const ViewEpub = () => {
             file={book}
             fontSize={scaleFont}
             theme={darkToggle ? "dark" : "light"}
-            onLocationChange={({ current, total }) => {
+            resumeCfi={resumeCfi}
+            onLocationChange={({ current, total, cfi }) => {
               setPage(current);
               setTotal(total);
+              pageRef.current = current;
+
+              // The exact place, for reopening this book in this browser.
+              if (placeKey && cfi) {
+                try {
+                  localStorage.setItem(placeKey, cfi);
+                } catch {
+                  // Private browsing, or storage full. The location number
+                  // still goes to the server below.
+                }
+              }
 
               /*
                 Record where the reader got to.

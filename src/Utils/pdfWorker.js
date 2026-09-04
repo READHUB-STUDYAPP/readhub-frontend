@@ -1,8 +1,7 @@
 import { pdfjs } from 'react-pdf';
 
 import './mapUpsertPolyfill';
-import polyfillSource from './mapUpsertPolyfill.js?raw';
-import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import PdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?worker';
 
 /**
  * Where pdf.js gets its worker.
@@ -10,46 +9,21 @@ import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
  * Imported for its side effect by every screen that touches a PDF, so the
  * answer is given once rather than in four files that can drift apart.
  *
- * Two things are settled here.
+ * It used to be fetched from unpkg, which made opening any PDF depend on a
+ * third party being reachable — a spinner and no explanation on a filtered or
+ * slow connection, and every reader announcing their visit to a host we do not
+ * control. The copy in node_modules is used instead.
  *
- * **The worker is ours, not a CDN's.** It used to be fetched from unpkg, which
- * made opening any PDF depend on a third party being reachable — so a reader on
- * a filtered or slow connection got a spinner and no explanation, and every
- * reader announced their visit to a host we do not control. Vite emits the copy
- * already in `node_modules` and gives us its URL.
+ * `?worker` rather than `?url`, and `workerPort` rather than `workerSrc`,
+ * because a URL is not enough: in development Vite serves the file from
+ * node_modules untransformed, the browser refuses it as a module worker, and
+ * pdf.js falls back to importing it on the main thread — which fails too, with
+ * "Setting up fake worker failed". `?worker` hands us a Worker constructor
+ * Vite has bundled properly for both development and the build, so there is no
+ * URL to resolve and nothing to get wrong.
  *
- * **The polyfill reaches the worker.** A worker has its own globals, so
- * patching `Map` on the page does not touch it — and the pdf.js code that was
- * actually crashing, the chunked-stream reader that fetches the file, runs on
- * the worker side.
- *
- * Where the browser lacks those methods, the worker is started from a small
- * module that imports the polyfill and then the worker itself. Both are static
- * imports, and those are evaluated in order before the body of the module
- * requesting them, so the patch is in place before pdf.js runs. The two
- * alternatives do not hold: a dynamic `import()` leaves a gap in which pdf.js's
- * test message is dispatched before the worker has attached a listener, and
- * such an event is dropped rather than queued; and inlining the polyfill as the
- * bootstrap's own body would put it *after* the worker, since static imports
- * are hoisted above it.
+ * The version must match the pdf.js react-pdf carries, or every document is
+ * refused with "The API version does not match the Worker version"; the app
+ * pins `pdfjs-dist` to exactly react-pdf's version so there is one copy.
  */
-const supportsUpsert = typeof Map.prototype.getOrInsertComputed === 'function';
-
-if (supportsUpsert) {
-  pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
-} else {
-  const asModule = (source) =>
-    URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
-
-  // The polyfill's own source, so there is one copy of it rather than a string
-  // beside a module that must be kept in step by hand.
-  const polyfillUrl = asModule(polyfillSource);
-
-  // Absolute: a blob has its own base URL, and a relative path would resolve
-  // against `blob:` and fail.
-  const workerHref = new URL(workerUrl, window.location.href).href;
-
-  pdfjs.GlobalWorkerOptions.workerSrc = asModule(
-    `import ${JSON.stringify(polyfillUrl)};\nimport ${JSON.stringify(workerHref)};\n`,
-  );
-}
+pdfjs.GlobalWorkerOptions.workerPort = new PdfWorker();

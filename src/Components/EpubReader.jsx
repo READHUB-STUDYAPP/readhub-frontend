@@ -1,4 +1,4 @@
-import Epub from "epubjs";
+import Epub, { EpubCFI } from "epubjs";
 import React, {
   useEffect,
   useImperativeHandle,
@@ -9,9 +9,10 @@ import React, {
 import { baseURL, apiEndpoints } from "../Util/apiEndpoints";
 
 const EpubReader = forwardRef(
-  ({ file, fontSize, theme, onLocationChange }, ref) => {
+  ({ file, fontSize, theme, onLocationChange, resumeCfi = null }, ref) => {
     const viewerRef = useRef(null);
     const resizeCleanupRef = useRef(null);
+    const resumedRef = useRef(false);
     const bookRef = useRef(null);
     const renditionRef = useRef(null);
 
@@ -66,6 +67,7 @@ const EpubReader = forwardRef(
       if (!viewerRef.current) return;
 
       let mounted = true;
+      resumedRef.current = false;
       setError(null);
       viewerRef.current.replaceChildren();
 
@@ -139,30 +141,77 @@ const EpubReader = forwardRef(
             book.ready,
             "The EPUB could not be parsed. The uploaded file may be invalid.",
           );
+
+          /*
+            Nothing is drawn for a reader who has already left.
+
+            Opening a book is a chain of awaits, and React runs this effect
+            twice on mount in development and again whenever the book changes.
+            Without this check the run that has already been cleaned up comes
+            back from its await and renders anyway -- into the same element the
+            newer run has just cleared. The result is two or three views
+            stacked in the viewer, the newest one wired to the controls and an
+            older one on top of the pile.
+
+            That is what "the page number changes but the page does not" was:
+            `next()` advanced the live rendition while the reader looked at an
+            orphan that nothing could move.
+          */
+          if (!mounted) {
+            book.destroy();
+            return;
+          }
+
           const rendition = book.renderTo(viewerRef.current, {
             width: "100%",
             height: "100%",
             spread: "none",
             flow: "paginated",
             /*
-              The continuous manager, for turns that do not stutter.
+              The default manager, deliberately.
 
-              The default manager holds one section at a time, so every turn
-              that crosses a chapter boundary unloads the current document and
-              parses the next one -- a visible pause and a flash, on exactly
-              the action a reader performs most. The continuous manager keeps
-              the neighbouring sections rendered either side of the one being
-              read, so a turn is a move within what is already there.
+              `continuous` looks like the answer to stuttering page turns, and
+              it is not: it moves between pages by scrolling its container, and
+              this viewer hides its overflow so that it can crop a page to the
+              column. Driving one with the other, the view never moves --
+              turning the page raised the location and stacked another iframe
+              on the pile while the reader sat looking at the cover.
 
-              It costs some memory for pages nobody is looking at. That is the
-              right trade for the one interaction that happens hundreds of
-              times in a sitting.
+              The default manager swaps the single view in place, which is what
+              works here.
             */
-            manager: "continuous",
             // Do not let the book run its own scripts in our page.
             allowScriptedContent: false,
           });
           renditionRef.current = rendition;
+
+          /*
+            Page-fitting rules, applied before the first page is laid out.
+
+            In paginated flow each page is a column the height of the viewer,
+            and the viewer hides its overflow, so anything the book sizes
+            larger than that column is cut off -- scanned plates and covers
+            especially, which carry their original pixel dimensions. `image` is
+            the SVG element, not a typo: a cover is usually an <svg> wrapping
+            an <image>, and an `img` rule never touches it.
+
+            Registered as a theme rather than injected once the section has
+            loaded. Injecting afterwards reflows a page that has already been
+            laid out, and reopening a book relies on that layout holding still:
+            the position is set from a CFI during the first display, and a
+            reflow after it silently threw the reader back to page one.
+          */
+          rendition.themes.register("readhub", {
+            "img, image, svg, video": {
+              "max-width": "100%",
+              "max-height": "100%",
+              width: "auto",
+              height: "auto",
+              "object-fit": "contain",
+            },
+            "body, html": { margin: "0", padding: "0" },
+          });
+          rendition.themes.select("readhub");
 
 
           //Listen for location changes
@@ -175,15 +224,37 @@ const EpubReader = forwardRef(
             const current = book.locations.locationFromCfi(location.start.cfi);
             const total = book.locations.total;
 
-            onLocationChange?.({ current: current + 1, total });
+            // The CFI is the exact place; the number is for progress and
+            // stats, which have to be comparable with a PDF's pages.
+            onLocationChange?.({ current: current + 1, total, cfi: location.start.cfi });
           });
 
+          /*
+            Open where the reader stopped.
+
+            The saved place is a CFI, and it is given to the *first* display on
+            purpose. epub.js positions within a section while it is laying that
+            section out; asked to move to a point in a section already on
+            screen it measures the finished layout instead, and for a book of
+            full-page images that measurement comes back as zero -- the reader
+            stays on page one and nothing reports a failure. Resuming by
+            location number could never work for that reason, whatever it was
+            given.
+          */
           await withTimeout(
-            rendition.display(),
+            rendition.display(resumeCfi ?? undefined),
             "The first EPUB page could not be rendered.",
           );
 
-          if (mounted) setIsLoading(false);
+          // Same again: the reader may have left while the first page was
+          // being laid out.
+          if (!mounted) {
+            rendition.destroy();
+            book.destroy();
+            return;
+          }
+
+          setIsLoading(false);
 
           /*
             Locations are what give an EPUB a page count, and generating them
@@ -199,16 +270,47 @@ const EpubReader = forwardRef(
           */
           book.locations
             .generate(1024)
-            .then(() => {
+            .then(async () => {
               if (!mounted) return;
 
+              /*
+                Reopen where the reader stopped.
+
+                A saved position is a location number, and location numbers do
+                not exist until generation finishes -- so this is the earliest
+                moment it can be honoured. Only on the first load of a book,
+                and only forwards: someone who has already turned a page while
+                this was generating should not be yanked back.
+
+                Awaited, because `display` is asynchronous: reading the current
+                location straight after asking to move reports the page being
+                left, and that stale number then overwrote the real one in the
+                header.
+              */
+                resumedRef.current = true;
+                /*
+                  A location's CFI is a *range* -- it marks the span of text
+                  that location covers, and looks like
+                  epubcfi(/6/4!/4/40/2,/104/2/1:235,/120/2/1:138).
+
+                  `display` will not position on a range: it opens the section
+                  the range lives in and leaves the reader at the top of it,
+                  which is why reopening a book at location 10 kept landing on
+                  page 1 with no error to show for it. Collapsed to its start,
+                  it is an ordinary point CFI and lands where it should.
+
+                  `cfiFromLocation` answers -1 when it cannot map the number,
+                  and -1 is truthy -- so the type is checked rather than the
+                  value.
+                */
               const cfi = rendition.currentLocation()?.start?.cfi;
-              const total = book.locations.total;
+              const total = bookRef.current?.locations?.total;
               if (!cfi || !total) return;
 
               onLocationChange?.({
-                current: book.locations.locationFromCfi(cfi) + 1,
+                current: bookRef.current.locations.locationFromCfi(cfi) + 1,
                 total,
+                cfi,
               });
             })
             .catch((locationError) => {
@@ -249,38 +351,7 @@ const EpubReader = forwardRef(
           rendition?.hooks.content.register((contents) => {
             const doc = contents.document;
 
-            /*
-              Keep a page inside its column.
 
-              In paginated flow each page is a column the height of the viewer,
-              and the viewer hides its overflow -- so anything the book sizes
-              larger than that column is sliced away. Scanned title pages and
-              full-page plates are routinely sized in absolute pixels, which is
-              why some pages arrived with their bottoms missing.
-
-              Added to the section's own stylesheet rather than through
-              `themes`: themes are re-injected whenever the font size or the
-              dark toggle changes, and doing it there disturbed the column
-              layout enough that pages stopped advancing on screen even as the
-              location moved. This runs once per section, before it is laid
-              out, and leaves the theme machinery alone.
-            */
-            contents.addStylesheetRules({
-              // `image` is the SVG element, not a typo: a cover is very often
-              // an <svg> wrapping an <image> with the original's pixel
-              // dimensions on it, which is exactly the case that was being
-              // clipped -- an `img` rule never touches it.
-              "img, image, svg, video": {
-                "max-width": "100%",
-                "max-height": "100%",
-                width: "auto",
-                height: "auto",
-                "object-fit": "contain",
-              },
-              // The body of a full-page image section carries no margin of its
-              // own, so the image has the whole column to fit into.
-              "body, html": { margin: "0", padding: "0" },
-            });
             let touchStartX = 0;
             let touchStartY = 0;
 
@@ -387,11 +458,19 @@ const EpubReader = forwardRef(
           </div>
         )}
 
+        {/*
+          The viewer takes the space left over, and no more.
+
+          It was `calc(100vh - 200px)` -- a guess at the height of the title
+          and page line above it. The guess was low, so the box ran past the
+          bottom of the window and the last inch of every page sat below the
+          fold, which is why pages looked cut off. `flex-1` inside a column
+          that is exactly the viewport tall measures it instead of guessing.
+        */}
         <div
           ref={viewerRef}
-          className="epub-viewer w-full h-full"
+          className="epub-viewer w-full flex-1 min-h-0"
           style={{
-            height: "calc(100vh - 200px)",
             position: "relative",
             width: "100%",
             overflow: "hidden",

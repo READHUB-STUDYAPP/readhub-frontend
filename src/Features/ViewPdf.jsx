@@ -255,27 +255,43 @@ const ViewPdf = () => {
     };
   }, [activeFileId]);
 
-  // Apply highlights to PDF text layer after rendering
+  /*
+    Paint the highlights back on.
+
+    This used to try twice, 50ms and 200ms after the page changed, and give up.
+    Turning a page inside an open document is fast enough for that; opening a
+    book is not -- the file still has to arrive and the page has to be drawn
+    before there is a text layer to mark. So on reopening a book the marks were
+    applied to nothing and never tried again, and a reader's highlights were
+    simply gone.
+
+    It now waits for the text layer to actually exist, checking briefly for a
+    few seconds and stopping either when it has painted or when it is clear the
+    page has no text to paint on.
+  */
   useEffect(() => {
-    if (viewMode === 'pdf' && activeFileId) {
-      // Retry a few times to ensure the PDF text layer has rendered before applying styles.
-      let attempts = 0;
-      let timeoutId;
+    if (viewMode !== 'pdf' || !activeFileId) return;
 
-      const apply = () => {
-        attempts += 1;
-        const pageHighlights = getHighlights(activeFileId);
-        highlightTextInPDF('.textLayer', pageHighlights, pageNumber);
+    let attempts = 0;
+    let timeoutId;
 
-        if (attempts < 2) {
-          timeoutId = setTimeout(apply, 150);
-        }
-      };
+    const apply = () => {
+      attempts += 1;
 
-      timeoutId = setTimeout(apply, 50);
+      // A text layer with no spans in it has not been drawn yet.
+      const layer = document.querySelector('.textLayer');
+      const ready = layer && layer.childElementCount > 0;
 
-      return () => clearTimeout(timeoutId);
-    }
+      if (ready) {
+        highlightTextInPDF('.textLayer', getHighlights(activeFileId), pageNumber);
+        return;
+      }
+
+      if (attempts < 40) timeoutId = setTimeout(apply, 150);
+    };
+
+    timeoutId = setTimeout(apply, 50);
+    return () => clearTimeout(timeoutId);
   }, [viewMode, pageNumber, activeFileId, getHighlights, highlights]);
 
   // Handle text selection
