@@ -15,7 +15,8 @@ import { toast } from 'react-toastify';
 import { discoverApi } from '../services/discover';
 import { FiSearch, FiX } from 'react-icons/fi';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+import '../Utils/pdfWorker';
+import { isFinished, isReading, pageOf } from '../Util/readingProgress';
 
 const Library = () => {
   const {
@@ -298,15 +299,9 @@ const Library = () => {
 
     // Filter by status
     if (filter === 'reading') {
-      filtered = books.filter((b) => {
-        const page = currentPage[b._id] ?? b.lastPageRead ?? 0;
-        return page > 0 && page < b.pages;
-      });
+      filtered = books.filter((b) => isReading(b, pageOf(b, currentPage)));
     } else if (filter === 'completed') {
-      filtered = books.filter((b) => {
-        const page = currentPage[b._id] ?? b.lastPageRead ?? 0;
-        return page >= b.pages;
-      });
+      filtered = books.filter((b) => isFinished(b, pageOf(b, currentPage)));
     }
 
     // Filter by search query
