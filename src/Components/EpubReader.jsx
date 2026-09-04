@@ -207,15 +207,27 @@ const EpubReader = forwardRef(
             nothing because the column being scrolled to is no longer where the
             layout thinks it is.
           */
+          let resizeTimer = null;
           const onResize = () => {
-            try {
-              rendition.resize();
-            } catch {
-              // A resize during teardown is not worth reporting.
-            }
+            // Settled, not per event. A resize fires in a stream while a
+            // window is dragged, and a scrollbar appearing or disappearing
+            // emits one too -- re-laying-out the book on each of them means a
+            // full re-layout in the middle of a page turn, which is felt.
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+              try {
+                rendition.resize();
+              } catch {
+                // A resize during teardown is not worth reporting.
+              }
+            }, 150);
           };
+
           window.addEventListener("resize", onResize);
-          resizeCleanupRef.current = () => window.removeEventListener("resize", onResize);
+          resizeCleanupRef.current = () => {
+            clearTimeout(resizeTimer);
+            window.removeEventListener("resize", onResize);
+          };
 
           rendition?.hooks.content.register((contents) => {
             const doc = contents.document;
