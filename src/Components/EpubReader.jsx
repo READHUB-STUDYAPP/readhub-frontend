@@ -303,6 +303,42 @@ const EpubReader = forwardRef(
                   and -1 is truthy -- so the type is checked rather than the
                   value.
                 */
+              /*
+                If the CFI did not land, walk to the place instead.
+
+                Restoring by CFI is the right mechanism and works in most
+                books. It does not in one shape: a book that is a single
+                enormous section -- a Project Gutenberg file is typically one
+                XHTML document of thirty-odd columns -- where epub.js opens the
+                section and measures the position within it, and the
+                measurement comes back as the top of the section.
+
+                Turning pages, on the other hand, always works: it is a column
+                scroll within the document already on screen. So when the CFI
+                misses, the place is reached by turning pages, which is what a
+                reader would otherwise be doing by hand. Bounded, because a
+                resume should never become an unbounded loop, and abandoned if
+                a turn stops making progress.
+              */
+              if (resumeCfi) {
+                const locations = bookRef.current?.locations;
+                const at = () => {
+                  const here = rendition.currentLocation()?.start?.cfi;
+                  return here ? locations?.locationFromCfi(here) ?? 0 : 0;
+                };
+
+                const goal = locations?.locationFromCfi(resumeCfi) ?? 0;
+                let previous = -1;
+
+                for (let step = 0; step < 400 && mounted; step += 1) {
+                  const here = at();
+                  if (here >= goal || here === previous) break;
+                  previous = here;
+                  await rendition.next();
+                }
+                if (!mounted) return;
+              }
+
               const cfi = rendition.currentLocation()?.start?.cfi;
               const total = bookRef.current?.locations?.total;
               if (!cfi || !total) return;
