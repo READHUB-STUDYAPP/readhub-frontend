@@ -1,40 +1,30 @@
 import axios from "axios";
 
+import { installAuthHandling } from "../Util/authHandling";
+
 const API_URL = import.meta.env.VITE_API_BASE_URL;
 
+/**
+ * The books, profile and reading-stats client.
+ *
+ * This instance used to sign the reader out on any 401 -- clearing the token
+ * and sending them to /login without attempting a refresh. An access token
+ * lives fifteen minutes, so a quarter of an hour into any session the next
+ * call through here threw them out, while the refresh cookie in their browser
+ * would have renewed it.
+ *
+ * It takes the same policy as the other instance now. It also carries
+ * credentials, without which the refresh cookie is not sent at all.
+ */
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
-//Api token to all requests
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  },
-);
-
-// Handle 401 errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      window.location.href = "/login";
-    }
-    return Promise.reject(error);
-  },
-);
+installAuthHandling(api);
 
 export const backendApi = {
   // Returns a presigned PUT { uploadUrl, publicUrl, method, contentType, key }.
