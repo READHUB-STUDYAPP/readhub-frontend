@@ -17,6 +17,7 @@ const EpubReader = forwardRef(
     const renditionRef = useRef(null);
 
     const [isLoading, setIsLoading] = useState(true);
+    const [progress, setProgress] = useState(0);
     const [error, setError] = useState(null);
 
     const withTimeout = (promise, message, timeout = 30000) =>
@@ -69,6 +70,7 @@ const EpubReader = forwardRef(
       let mounted = true;
       resumedRef.current = false;
       setError(null);
+      setProgress(0);
       viewerRef.current.replaceChildren();
 
       if (!source) {
@@ -81,38 +83,89 @@ const EpubReader = forwardRef(
         try {
           setIsLoading(true);
 
-          console.log("Starting EPUB load...");
+          /*
+            Fetch the book, saying how far it has got.
+
+            A large EPUB is tens of megabytes, and this used to be a spinner
+            with a thirty-second limit on the whole download: on a slow
+            connection a big book simply ran out of time and reported itself
+            broken, and a second attempt often succeeded because the first had
+            warmed the cache. That reads as "it fails the first time", which is
+            not something a reader should have to learn to work around.
+
+            So: the body is read in chunks and the progress reported, the limit
+            applies to a *stall* rather than to the whole transfer -- a download
+            making steady progress is not failing, however long it is -- and a
+            transfer that does die is retried once before the reader is told
+            anything.
+          */
+          const STALL_MS = 30000;
+
+          const readBody = async (response) => {
+            const total = Number(response.headers.get("content-length")) || 0;
+
+            // No stream to read: take it in one piece.
+            if (!response.body?.getReader) return response.arrayBuffer();
+
+            const reader = response.body.getReader();
+            const chunks = [];
+            let received = 0;
+
+            for (;;) {
+              const { done, value } = await withTimeout(
+                reader.read(),
+                "The download stopped part-way through.",
+                STALL_MS,
+              );
+              if (done) break;
+
+              chunks.push(value);
+              received += value.length;
+              if (mounted && total) setProgress(Math.min(99, Math.round((received / total) * 100)));
+            }
+
+            const bytes = new Uint8Array(received);
+            let at = 0;
+            for (const chunk of chunks) {
+              bytes.set(chunk, at);
+              at += chunk.length;
+            }
+            return bytes.buffer;
+          };
+
+          const download = async (url, options) => {
+            let lastError;
+
+            for (let attempt = 0; attempt < 2; attempt += 1) {
+              const controller = new AbortController();
+              try {
+                const response = await withTimeout(
+                  fetch(url, { ...options, signal: controller.signal }),
+                  "The book did not start downloading.",
+                  STALL_MS,
+                );
+                if (!response.ok) throw new Error(`Unable to download EPUB (${response.status})`);
+                return await readBody(response);
+              } catch (error) {
+                controller.abort();
+                lastError = error;
+                if (!mounted) throw error;
+              }
+            }
+
+            throw lastError;
+          };
 
           let bookSource = source;
+
           if (file?._id) {
             const token = localStorage.getItem("token");
             const contentUrl = `${baseURL}${apiEndpoints.BOOK_CONTENT.replace(":bookId", file._id)}`;
-            const controller = new AbortController();
-            const response = await withTimeout(
-              fetch(contentUrl, { headers: token ? { Authorization: `Bearer ${token}` } : {}, signal: controller.signal }),
-              "The EPUB download timed out. Check the API and storage service.",
-            ).catch((downloadError) => {
-              controller.abort();
-              throw downloadError;
+            bookSource = await download(contentUrl, {
+              headers: token ? { Authorization: `Bearer ${token}` } : {},
             });
-            if (!response.ok) throw new Error(`Unable to download EPUB (${response.status})`);
-            bookSource = await withTimeout(response.arrayBuffer(), "The EPUB file could not be read.");
           } else if (typeof source === "string" && /^https?:\/\//i.test(source)) {
-            const controller = new AbortController();
-            const response = await withTimeout(
-              fetch(source, { credentials: "omit", signal: controller.signal }),
-              "The EPUB download timed out. Check the file URL and storage service.",
-            ).catch((downloadError) => {
-              controller.abort();
-              throw downloadError;
-            });
-            if (!response.ok) {
-              throw new Error(`Unable to download EPUB (${response.status})`);
-            }
-            bookSource = await withTimeout(
-              response.arrayBuffer(),
-              "The EPUB file could not be read.",
-            );
+            bookSource = await download(source, { credentials: "omit" });
           }
 
           /*
@@ -483,7 +536,9 @@ const EpubReader = forwardRef(
           <div className="absolute inset-0 flex items-center justify-center z-10 bg-surface">
             <div className="text-center">
               <div className="w-16 h-16 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-ink-faint">Loading your book...</p>
+              <p className="text-ink-faint">
+                {progress > 0 ? `Downloading your book… ${progress}%` : "Opening your book…"}
+              </p>
             </div>
           </div>
         )}
