@@ -17,6 +17,9 @@ import ViewPdf from "./Features/ViewPdf";
 import Group from "./Pages/Groups/Group";
 import GroupComments from "./Pages/Groups/GroupComments";
 import Groups from "./Pages/Groups/Groups";
+import Communities from "./Pages/Communities/Communities";
+import Community from "./Pages/Communities/Community";
+import JoinCommunity from "./Pages/Communities/JoinCommunity";
 import Splash from "./Pages/Splash";
 import Signup from "./Pages/Auth/Signup";
 import Login from "./Pages/Auth/Login";
@@ -55,6 +58,7 @@ function App() {
     "/notes",
     "/explore",
     "/groups",
+    "/communities",
     "/focus",
     "/profile",
     "/privacy",
@@ -125,6 +129,9 @@ function App() {
 
         <Route path="/focus" element={<Focus />} />
 
+        <Route path="/communities" element={<Communities />} />
+        <Route path="/communities/join/:code" element={<JoinCommunity />} />
+        <Route path="/communities/:communityId" element={<Community />} />
         <Route path="/groups" element={<Groups />} />
         <Route path="/groups/:groupId" element={<Group />} />
         <Route path="/groups/:groupId/comments" element={<GroupComments />} />

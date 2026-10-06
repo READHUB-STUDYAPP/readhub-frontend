@@ -29,6 +29,7 @@ const DESTINATIONS = [
   { to: '/library', label: 'Library', Icon: FiBookOpen },
   { to: '/notes', label: 'Notes', Icon: FiFileText },
   { to: '/explore', label: 'Explore', Icon: FiCompass },
+  { to: '/communities', label: 'Communities', Icon: FiUsers },
   { to: '/groups', label: 'Groups', Icon: FiUsers },
   { to: '/focus', label: 'Focus', Icon: FiTarget },
   { to: '/profile', label: 'Profile', Icon: FiUser },
@@ -43,7 +44,7 @@ const DESTINATIONS = [
  * what others are reading is a lean-back activity rather than a destination
  * somebody taps to on a bus.
  */
-const PRIMARY = ['/home', '/library', '/notes', '/groups', '/profile'];
+const PRIMARY = ['/home', '/library', '/communities', '/explore', '/notes'];
 
 function SidebarLink({ item }) {
   const { to, label, Icon } = item;
