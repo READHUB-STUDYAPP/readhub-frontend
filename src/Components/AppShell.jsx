@@ -1,13 +1,16 @@
+import { useEffect, useState } from 'react';
 import {
   FiBookOpen,
   FiCompass,
   FiFileText,
   FiHome,
+  FiMoreHorizontal,
   FiTarget,
   FiUser,
+  FiUserPlus,
   FiUsers,
 } from 'react-icons/fi';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 
 import { ReadHubImages } from '../assets/asset';
 import ThemeToggle from './ThemeToggle';
@@ -30,21 +33,28 @@ const DESTINATIONS = [
   { to: '/notes', label: 'Notes', Icon: FiFileText },
   { to: '/explore', label: 'Explore', Icon: FiCompass },
   { to: '/communities', label: 'Communities', Icon: FiUsers },
+  { to: '/buddies', label: 'Buddies', Icon: FiUserPlus },
   { to: '/groups', label: 'Groups', Icon: FiUsers },
   { to: '/focus', label: 'Focus', Icon: FiTarget },
   { to: '/profile', label: 'Profile', Icon: FiUser },
 ];
 
 /**
- * The destinations the phone bar carries.
+ * The destinations the phone bar carries directly.
  *
- * Groups is here rather than sidebar-only: it was unreachable in a phone
- * browser entirely, which is most of the readers this app is for. Explore is
- * the one that moved out -- it is reached from the home screen, and browsing
- * what others are reading is a lean-back activity rather than a destination
- * somebody taps to on a bus.
+ * Four, not five, because the fifth slot is More -- and More is what makes
+ * this list safe to choose. The sidebar holds nine destinations and a phone
+ * bar holds about five, so any fixed five leaves four unreachable on a phone,
+ * which is most of the readers this app is for. That has bitten this file
+ * before: an earlier revision dropped Groups and Profile out of the bar
+ * without putting them anywhere else, so on a phone there was no way to reach
+ * a reading group, or to sign out.
+ *
+ * Explore is not here on purpose -- it is reached from the home screen, and
+ * browsing what others are reading is a lean-back activity rather than
+ * somewhere you tap to on a bus.
  */
-const PRIMARY = ['/home', '/library', '/communities', '/explore', '/notes'];
+const PRIMARY = ['/home', '/library', '/communities', '/buddies'];
 
 function SidebarLink({ item }) {
   const { to, label, Icon } = item;
@@ -99,6 +109,15 @@ function TabLink({ item }) {
 
 export default function AppShell({ children }) {
   const tabs = DESTINATIONS.filter((item) => PRIMARY.includes(item.to));
+  const overflow = DESTINATIONS.filter((item) => !PRIMARY.includes(item.to));
+  const [moreOpen, setMoreOpen] = useState(false);
+  const { pathname } = useLocation();
+
+  // A destination chosen from the sheet should not leave the sheet open behind
+  // it, and neither should the back button.
+  useEffect(() => {
+    setMoreOpen(false);
+  }, [pathname]);
 
   return (
     <div className="min-h-dvh bg-page text-ink">
@@ -147,14 +166,79 @@ export default function AppShell({ children }) {
 
       {/* Mobile: the bottom bar, over the safe area on a phone browser. */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-surface px-2 pt-1 lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-50 flex border-t border-line bg-surface px-2 pt-1 lg:hidden"
         style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 6px)' }}
         aria-label="Main"
       >
         {tabs.map((item) => (
           <TabLink key={item.to} item={item} />
         ))}
+
+        <button
+          type="button"
+          onClick={() => setMoreOpen((open) => !open)}
+          aria-expanded={moreOpen}
+          aria-controls="more-destinations"
+          className={[
+            'flex flex-1 flex-col items-center gap-1 rounded-md py-2 text-label_Small transition-colors',
+            moreOpen || overflow.some((item) => item.to === pathname)
+              ? 'text-brand'
+              : 'text-ink-faint',
+          ].join(' ')}
+        >
+          <span
+            className={[
+              'flex h-7 w-12 items-center justify-center rounded-md transition-colors',
+              moreOpen || overflow.some((item) => item.to === pathname)
+                ? 'bg-brand-wash'
+                : 'bg-transparent',
+            ].join(' ')}
+          >
+            <FiMoreHorizontal size={19} aria-hidden="true" />
+          </span>
+          <span>More</span>
+        </button>
       </nav>
+
+      {/* The rest of the destinations, for a phone. */}
+      {moreOpen && (
+        <>
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={() => setMoreOpen(false)}
+            className="fixed inset-0 z-30 bg-black/30 lg:hidden"
+          />
+          <div
+            id="more-destinations"
+            className="fixed inset-x-0 bottom-0 z-40 rounded-t-2xl border-t border-line bg-surface p-4 lg:hidden"
+            style={{ paddingBottom: 'calc(max(env(safe-area-inset-bottom), 6px) + 5.5rem)' }}
+          >
+            <nav className="grid grid-cols-3 gap-2" aria-label="More destinations">
+              {overflow.map(({ to, label, Icon }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  className={({ isActive }) =>
+                    [
+                      'flex flex-col items-center gap-2 rounded-xl p-4 text-label_Small transition-colors',
+                      isActive
+                        ? 'bg-brand-wash font-semibold text-brand'
+                        : 'text-ink-soft hover:bg-surface-variant',
+                    ].join(' ')
+                  }
+                >
+                  <Icon size={20} aria-hidden="true" />
+                  <span>{label}</span>
+                </NavLink>
+              ))}
+            </nav>
+            <div className="mt-4 border-t border-line pt-4">
+              <ThemeToggle />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
