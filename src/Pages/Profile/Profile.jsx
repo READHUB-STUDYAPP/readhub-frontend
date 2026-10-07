@@ -6,6 +6,7 @@ import { apiEndpoints } from '../../Util/apiEndpoints';
 import axiosConfig from '../../Util/axiosConfig';
 import { useFiles } from '../../Context/FileContext';
 import ThemeToggle from '../../Components/ThemeToggle';
+import Achievements from '../../Components/Achievements';
 
 const Profile = () => {
     const [image, setImage] = useState(null);
@@ -224,6 +225,10 @@ const Profile = () => {
                         <span className="font-semibold text-xl">{totalHighlights}</span>
                         <span className="font-light">Highlights</span>
                     </div>
+                </div>
+
+                <div className="mt-10">
+                    <Achievements />
                 </div>
 
                 <div className="card mt-10 bg-brand flex flex-col gap-5 p-5 rounded-2xl justify-start items-start">

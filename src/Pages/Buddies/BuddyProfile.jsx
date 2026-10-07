@@ -12,6 +12,7 @@ import {
   labelFor,
   timeAgo,
 } from '../../services/buddies';
+import { AchievementList } from '../../Components/Achievements';
 import { authInputClass } from '../../Util/authStyles';
 
 /**
@@ -162,6 +163,16 @@ export default function BuddyProfile() {
               </span>
             ))}
           </div>
+        </section>
+      )}
+
+      {person.achievements?.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-body_Small font-semibold text-ink">Achievements</h2>
+          {/* Earned only. The server does not send the unearned list for
+              somebody else, and a page listing what a stranger has not
+              managed would be nobody's business anyway. */}
+          <AchievementList achievements={person.achievements} />
         </section>
       )}
 

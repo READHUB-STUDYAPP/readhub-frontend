@@ -3,6 +3,7 @@ import {
   FiArrowLeft,
   FiCheck,
   FiCopy,
+  FiEdit2,
   FiGlobe,
   FiLock,
   FiPlus,
@@ -14,7 +15,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 import { categoryLabel, communitiesApi, timeAgo } from '../../services/communities';
-import { NewChallenge, NewGroup } from './CommunityDialogs';
+import { EditCommunity, NewChallenge, NewGroup } from './CommunityDialogs';
 import { authInputClass } from '../../Util/authStyles';
 
 /**
@@ -45,6 +46,7 @@ export default function Community() {
   const { communityId } = useParams();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
+  const [editing, setEditing] = useState(false);
 
   const tab = TABS.some((t) => t.id === params.get('tab')) ? params.get('tab') : 'announcements';
 
@@ -94,9 +96,9 @@ export default function Community() {
       {/* Banner */}
       <div className="relative overflow-hidden rounded-xl">
         <div className="relative flex h-44 items-end bg-brand">
-          {community.logoUrl && (
+          {(community.coverUrl || community.logoUrl) && (
             <img
-              src={community.logoUrl}
+              src={community.coverUrl || community.logoUrl}
               alt=""
               className="absolute inset-0 h-full w-full object-cover"
             />
@@ -112,6 +114,17 @@ export default function Community() {
           >
             <FiArrowLeft size={18} />
           </button>
+
+          {canAdmin(community.myRole) && (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              aria-label="Edit this community"
+              className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/60"
+            >
+              <FiEdit2 size={16} />
+            </button>
+          )}
 
           <div className="relative flex flex-col gap-1 p-5">
             <h1 className="flex items-center gap-2 text-headline_Small font-extrabold text-white">
@@ -132,6 +145,18 @@ export default function Community() {
           </div>
         </div>
       </div>
+
+      {editing && (
+        <EditCommunity
+          community={community}
+          onClose={() => setEditing(false)}
+          onSaved={async () => {
+            setEditing(false);
+            await load();
+            toast.success('Community updated.');
+          }}
+        />
+      )}
 
       {/* Tabs */}
       <div
