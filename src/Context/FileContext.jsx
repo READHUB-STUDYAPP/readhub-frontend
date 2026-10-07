@@ -203,6 +203,9 @@ export function FileProvider({ children }) {
   };
 
   //fetch books from backend
+  /** The last failure from loading the library, or null when it went fine. */
+  const [booksError, setBooksError] = useState(null);
+
   const fetchBooks = useCallback(async () => {
     try {
       setLoading(true);
@@ -224,7 +227,15 @@ export function FileProvider({ children }) {
         category: bookCategories[book._id] || book.category || "",
       })));
       setCurrentPage((prev) => ({ ...prev, ...savedPages }));
+      setBooksError(null);
     } catch (error) {
+      // This catch used to be empty, which made a dead network
+      // indistinguishable from an empty library: the reader waited forever for
+      // books that were never coming and showed a blank screen with nothing to
+      // explain it. Whoever is rendering needs to be able to tell "we could
+      // not ask" from "there is nothing there".
+      console.error('[library] could not load books', error);
+      setBooksError(error);
     } finally {
       setLoading(false);
     }
@@ -430,6 +441,7 @@ export function FileProvider({ children }) {
 
         uploadBook,
         fetchBooks,
+        booksError,
         deleteBook,
         setBookCategory,
         updateProgress,
