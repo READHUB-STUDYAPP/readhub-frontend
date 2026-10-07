@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FiBookOpen, FiCheck, FiChevronRight, FiUserPlus, FiUsers, FiX } from 'react-icons/fi';
+import {
+  FiBookOpen,
+  FiCheck,
+  FiChevronRight,
+  FiShare2,
+  FiUserPlus,
+  FiUsers,
+  FiX,
+} from 'react-icons/fi';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
@@ -164,13 +172,16 @@ export default function Buddies() {
             Read with someone. Keep each other going.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          className="rounded-full border border-line px-4 py-2 text-body_Small font-semibold text-ink transition-colors hover:bg-surface-variant"
-        >
-          Edit my buddy profile
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <InviteAFriend userId={state.profile?.user} />
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="rounded-full border border-line px-4 py-2 text-body_Small font-semibold text-ink transition-colors hover:bg-surface-variant"
+          >
+            Edit my buddy profile
+          </button>
+        </div>
       </header>
 
       <div role="tablist" aria-label="Reading Buddy" className="flex gap-2 overflow-x-auto pb-1">
@@ -471,5 +482,75 @@ function MatchBadge({ score }) {
     <span className="shrink-0 rounded-full bg-brand-wash px-2.5 py-1 text-label_Small font-bold text-brand-strong">
       {score}%
     </span>
+  );
+}
+
+/**
+ * Share a link that brings someone into Reading Buddy.
+ *
+ * The link is the sharer's own public buddy profile. That is deliberate: a
+ * referral link to a sign-up page gets you an account, whereas a link to a
+ * person gets you the pair — whoever follows it arrives at a real reader with
+ * a reason to connect, and the Send request button is already there. More
+ * people to match with is the point, and a match needs two named people.
+ *
+ * Uses the platform share sheet where there is one, because that is how a
+ * phone sends a link to WhatsApp. Falls back to the clipboard, and then to
+ * showing the link so it can be copied by hand — a share button that silently
+ * does nothing is worse than no button.
+ */
+function InviteAFriend({ userId }) {
+  const [copied, setCopied] = useState(false);
+  const [shown, setShown] = useState('');
+
+  if (!userId) return null;
+
+  const link = `${window.location.origin}/buddies/u/${userId}`;
+  const text = 'Read with me on ReadHub — we can set a book and keep each other going.';
+
+  const onShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Be my reading buddy', text, url: link });
+        return;
+      } catch (error) {
+        // A cancelled share is not a failure; anything else falls through.
+        if (error?.name === 'AbortError') return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      toast.success('Invite link copied.');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setShown(link);
+    }
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={onShare}
+        className="flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-body_Small font-semibold text-white transition-colors hover:bg-brand-strong"
+      >
+        <FiShare2 size={14} />
+        {copied ? 'Link copied' : 'Invite a friend'}
+      </button>
+
+      {shown && (
+        <label className="flex w-full items-center gap-2">
+          <span className="sr-only">Invite link</span>
+          <input
+            readOnly
+            value={shown}
+            onFocus={(event) => event.target.select()}
+            className="min-w-0 flex-1 rounded-full border border-line bg-surface px-4 py-2 text-body_Small text-ink-soft"
+          />
+        </label>
+      )}
+    </>
   );
 }
