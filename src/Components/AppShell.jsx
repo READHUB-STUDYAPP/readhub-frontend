@@ -166,7 +166,7 @@ export default function AppShell({ children }) {
 
       {/* Mobile: the bottom bar, over the safe area on a phone browser. */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-50 flex border-t border-line bg-surface px-2 pt-1 lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-surface px-2 pt-1 lg:hidden"
         style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 6px)' }}
         aria-label="Main"
       >
@@ -207,11 +207,11 @@ export default function AppShell({ children }) {
             type="button"
             aria-label="Close"
             onClick={() => setMoreOpen(false)}
-            className="fixed inset-0 z-30 bg-black/30 lg:hidden"
+            className="fixed inset-0 z-20 bg-black/30 lg:hidden"
           />
           <div
             id="more-destinations"
-            className="fixed inset-x-0 bottom-0 z-40 rounded-t-2xl border-t border-line bg-surface p-4 lg:hidden"
+            className="fixed inset-x-0 bottom-0 z-30 rounded-t-2xl border-t border-line bg-surface p-4 lg:hidden"
             style={{ paddingBottom: 'calc(max(env(safe-area-inset-bottom), 6px) + 5.5rem)' }}
           >
             <nav className="grid grid-cols-3 gap-2" aria-label="More destinations">
