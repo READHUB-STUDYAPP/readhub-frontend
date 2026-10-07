@@ -12,6 +12,8 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
+import { authInputClass } from '../../Util/authStyles';
+
 import { groupsApi, targetStatus } from '../../services/groups';
 import { apiEndpoints } from '../../Util/apiEndpoints';
 import axiosConfig from '../../Util/axiosConfig';
@@ -35,6 +37,7 @@ export default function Group() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [targeting, setTargeting] = useState(null);
   const myId = localStorage.getItem('userId');
 
   const load = useCallback(async () => {
@@ -70,6 +73,24 @@ export default function Group() {
     } catch (error) {
       toast.error(error?.response?.data?.message || failure);
     }
+  };
+
+  /**
+   * Open the target sheet for one book.
+   *
+   * Carries the book's own details with it so the form can cap the page at the
+   * book's length -- a target of page 900 in a 304-page book is a goal nobody
+   * can reach, and the group would show everyone permanently behind.
+   */
+  const setTargetFor = (entry) => {
+    const existing = group.schedule?.find((item) => item.book === entry.book);
+    setTargeting({
+      bookId: entry.book,
+      title: entry.detail?.title ?? 'this book',
+      pages: entry.detail?.pages ?? 0,
+      targetPage: existing?.targetPage ?? '',
+      dueAt: existing?.dueAt ? new Date(existing.dueAt).toISOString().slice(0, 10) : '',
+    });
   };
 
   const onCopyCode = async () => {
@@ -166,11 +187,23 @@ export default function Group() {
                       <h2 className="text-tittle_Medium font-bold text-ink">
                         {entry.detail?.title ?? 'Book no longer available'}
                       </h2>
-                      <p className="text-label_Medium text-ink-faint">
-                        {target
-                          ? `Target: page ${target.targetPage} by ${new Date(target.dueAt).toLocaleDateString()}`
-                          : 'No target set'}
-                      </p>
+                      {me?.role === 'owner' ? (
+                        <button
+                          type="button"
+                          onClick={() => setTargetFor(entry)}
+                          className="rounded-full border border-line px-3 py-1 text-label_Medium text-ink-soft transition-colors hover:bg-surface-variant"
+                        >
+                          {target
+                            ? `Target: page ${target.targetPage} by ${new Date(target.dueAt).toLocaleDateString()}`
+                            : 'Set a target'}
+                        </button>
+                      ) : (
+                        <p className="text-label_Medium text-ink-faint">
+                          {target
+                            ? `Target: page ${target.targetPage} by ${new Date(target.dueAt).toLocaleDateString()}`
+                            : 'No target set'}
+                        </p>
+                      )}
                     </div>
 
                     {(me?.role === 'owner' || entry.addedBy === myId) && (
@@ -337,6 +370,132 @@ export default function Group() {
           </button>
         </aside>
       </div>
+
+      {targeting && (
+        <SetTarget
+          groupId={groupId}
+          target={targeting}
+          onClose={() => setTargeting(null)}
+          onSaved={async () => {
+            setTargeting(null);
+            await load();
+            toast.success('Target set.');
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * A page and a date for the group to aim at.
+ *
+ * Both are required together, because a target is the pair: a page with no
+ * date is a wish, and a date with no page says nothing about what to read.
+ * The server takes them as one schedule entry, and the progress bars read
+ * "behind" or "on track" from the two of them.
+ */
+function SetTarget({ groupId, target, onClose, onSaved }) {
+  const [page, setPage] = useState(target.targetPage || '');
+  const [due, setDue] = useState(
+    target.dueAt || new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+  );
+  const [saving, setSaving] = useState(false);
+
+  const onSubmit = async (event) => {
+    event.preventDefault();
+
+    const wanted = Number(page);
+    if (!Number.isFinite(wanted) || wanted < 1) {
+      toast.error('Give the group a page to aim for.');
+      return;
+    }
+    if (target.pages > 0 && wanted > target.pages) {
+      toast.error(`${target.title} only has ${target.pages} pages.`);
+      return;
+    }
+    if (!due) {
+      toast.error('Pick a date to reach it by.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await groupsApi.setTarget(groupId, {
+        bookId: target.bookId,
+        targetPage: Math.round(wanted),
+        // End of the chosen day, so a target "by the 20th" is not already
+        // overdue as the 20th begins.
+        dueAt: new Date(`${due}T23:59:59`).toISOString(),
+      });
+      await onSaved();
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'Could not set that target.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4">
+      <form
+        onSubmit={onSubmit}
+        className="flex max-h-[90dvh] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-t-2xl bg-surface p-6 sm:rounded-2xl"
+      >
+        <div>
+          <h2 className="text-tittle_Large font-bold text-ink">Set a reading target</h2>
+          <p className="break-all text-label_Medium text-ink-soft">{target.title}</p>
+        </div>
+
+        <label className="flex flex-col gap-2">
+          <span className="text-body_Small font-semibold text-ink">
+            Reach which page?
+            {target.pages > 0 && (
+              <span className="font-normal text-ink-faint"> (of {target.pages})</span>
+            )}
+          </span>
+          <input
+            type="number"
+            min={1}
+            max={target.pages || undefined}
+            value={page}
+            onChange={(event) => setPage(event.target.value)}
+            placeholder="120"
+            className={authInputClass(false)}
+          />
+        </label>
+
+        <label className="flex flex-col gap-2">
+          <span className="text-body_Small font-semibold text-ink">By when?</span>
+          <input
+            type="date"
+            value={due}
+            onChange={(event) => setDue(event.target.value)}
+            className={authInputClass(false)}
+          />
+        </label>
+
+        <p className="text-label_Small text-ink-faint">
+          Everyone in the group sees the target, and their own progress against it.
+        </p>
+
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex-1 rounded-full bg-brand px-5 py-2.5 text-body_Medium font-semibold text-white transition-colors hover:bg-brand-strong disabled:opacity-60"
+          >
+            {saving ? 'Saving…' : 'Set target'}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 rounded-full border border-line px-5 py-2.5 text-body_Medium font-semibold text-ink-soft transition-colors hover:bg-surface-variant"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
