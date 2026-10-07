@@ -14,6 +14,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 import { categoryLabel, communitiesApi, timeAgo } from '../../services/communities';
+import { NewChallenge, NewGroup } from './CommunityDialogs';
 import { authInputClass } from '../../Util/authStyles';
 
 /**
@@ -389,13 +390,16 @@ function Groups({ communityId, role }) {
   const navigate = useNavigate();
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [creatingGroup, setCreatingGroup] = useState(false);
+
+  const load = useCallback(
+    () => communitiesApi.groups(communityId).then(setGroups),
+    [communityId],
+  );
 
   useEffect(() => {
-    communitiesApi
-      .groups(communityId)
-      .then(setGroups)
-      .finally(() => setLoading(false));
-  }, [communityId]);
+    load().finally(() => setLoading(false));
+  }, [load]);
 
   if (loading) return <Skeleton rows={2} />;
 
@@ -408,13 +412,25 @@ function Groups({ communityId, role }) {
         {canModerate(role) && (
           <button
             type="button"
-            onClick={() => navigate('/groups')}
+            onClick={() => setCreatingGroup(true)}
             className="flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-label_Large font-semibold text-white transition-colors hover:bg-brand-strong"
           >
             <FiPlus size={14} /> New Group
           </button>
         )}
       </div>
+
+      {creatingGroup && (
+        <NewGroup
+          communityId={communityId}
+          onClose={() => setCreatingGroup(false)}
+          onCreated={async (group) => {
+            setCreatingGroup(false);
+            await load();
+            toast.success(`${group.name} is ready.`);
+          }}
+        />
+      )}
 
       {groups.length === 0 ? (
         <Empty
@@ -462,6 +478,7 @@ function Challenges({ communityId, role }) {
   const [challenges, setChallenges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
+  const [creatingChallenge, setCreatingChallenge] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -507,6 +524,30 @@ function Challenges({ communityId, role }) {
             <span className="truncate text-tittle_Medium font-bold">{active.title}</span>
           </div>
         </div>
+      )}
+
+      {canModerate(role) && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setCreatingChallenge(true)}
+            className="flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-label_Large font-semibold text-white transition-colors hover:bg-brand-strong"
+          >
+            <FiPlus size={14} /> New challenge
+          </button>
+        </div>
+      )}
+
+      {creatingChallenge && (
+        <NewChallenge
+          communityId={communityId}
+          onClose={() => setCreatingChallenge(false)}
+          onCreated={async (challenge) => {
+            setCreatingChallenge(false);
+            await load();
+            toast.success(`${challenge.title} has started.`);
+          }}
+        />
       )}
 
       {challenges.length === 0 ? (

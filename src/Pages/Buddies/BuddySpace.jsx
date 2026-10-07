@@ -215,7 +215,7 @@ export default function BuddySpace() {
             <h3 className="text-body_Small font-semibold text-ink">Finished together</h3>
             <ul className="flex flex-col gap-1">
               {finished.map((read) => (
-                <li key={read._id} className="text-body_Small text-ink-soft">
+                <li key={read._id} className="break-all text-body_Small text-ink-soft">
                   {read.bookTitle}
                   {read.completedAt && (
                     <span className="text-ink-faint"> · {new Date(read.completedAt).toLocaleDateString()}</span>
@@ -250,7 +250,7 @@ export default function BuddySpace() {
                     mine ? 'bg-brand text-white' : 'bg-surface-variant text-ink'
                   } ${message.deletedAt ? 'italic opacity-70' : ''}`}
                 >
-                  <p className="whitespace-pre-wrap text-body_Small">{message.body}</p>
+                  <p className="whitespace-pre-wrap break-words text-body_Small">{message.body}</p>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -368,7 +368,9 @@ function SharedRead({ read, meIsNot, partnerName, onProgress }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-body_Large font-semibold text-ink">{read.bookTitle}</p>
+        <p className="min-w-0 break-all text-body_Large font-semibold text-ink">
+          {read.bookTitle}
+        </p>
         <p className="text-body_Small text-ink-soft">
           {read.targetPage && `Target: page ${read.targetPage}`}
           {read.targetPage && read.targetDate && ' · '}
@@ -376,7 +378,7 @@ function SharedRead({ read, meIsNot, partnerName, onProgress }) {
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid min-w-0 gap-3 sm:grid-cols-2">
         <Bar label="You" row={myRow} target={read.targetPage} />
         <Bar label={partnerName} row={partnerRow} target={read.targetPage} />
       </div>
@@ -409,8 +411,8 @@ function Bar({ label, row, target }) {
 
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="truncate text-body_Small font-medium text-ink">{label}</span>
+      <div className="flex min-w-0 items-baseline justify-between gap-2">
+        <span className="min-w-0 truncate text-body_Small font-medium text-ink">{label}</span>
         <span className="shrink-0 text-label_Small text-ink-faint">
           {percent === null ? `page ${row?.page ?? 0}` : `${percent}%`}
         </span>

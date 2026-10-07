@@ -170,7 +170,7 @@ export default function BuddyProfileForm({ profile, onSaved, onCancel }) {
           </select>
         </Field>
 
-        <Field label="Books a month you are aiming for">
+        <Field label="How many books a month are you aiming for?">
           <input
             type="number"
             min={1}
