@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { useFiles } from '../Context/FileContext';
@@ -14,6 +14,18 @@ import { highlightTextInPDF } from '../Components/HighlightRenderer';
 import { toast } from 'react-toastify';
 
 import '../Utils/pdfWorker';
+
+/**
+ * The width to draw a page at before the container has been measured.
+ *
+ * Never a constant: a hardcoded desktop width is what turned a missed
+ * measurement into a page wider than the phone holding it. The window is
+ * always known, even on the very first paint.
+ */
+function fallbackPageWidth() {
+  if (typeof window === 'undefined') return 640;
+  return Math.min(640, Math.max(280, window.innerWidth - 32));
+}
 
 const ViewPdf = () => {
   const { fileId } = useParams();
@@ -65,8 +77,35 @@ const ViewPdf = () => {
    * Measured from the element the page sits in, and re-measured when the window
    * changes, so the fit holds when a browser is resized or a phone is turned.
    */
-  const pageAreaRef = useRef(null);
   const [pageArea, setPageArea] = useState(0);
+  const pageObserverRef = useRef(null);
+
+  /**
+   * Measure the page area, as a callback ref.
+   *
+   * This used to be an effect with an empty dependency list that began
+   * `if (!element) return`. The element only exists once the PDF view is
+   * actually on screen, so on any render where it was not yet mounted the
+   * effect bailed out and -- having no dependencies -- never ran again.
+   * `pageArea` stayed 0, the fallback below drew the page at desktop width,
+   * and on a phone the text ran off both edges.
+   *
+   * A callback ref cannot miss: React calls it with the node when it mounts,
+   * whenever that happens, and with null when it goes.
+   */
+  const pageAreaRef = useCallback((node) => {
+    pageObserverRef.current?.disconnect();
+    pageObserverRef.current = null;
+    if (!node) return;
+
+    const measure = () => setPageArea(node.clientWidth);
+    measure();
+
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    pageObserverRef.current = observer;
+  }, []);
   const [scaleFont, setScaleFont] = useState(16);
 
   // Track if we've initiated a fetch
@@ -434,23 +473,6 @@ const ViewPdf = () => {
       updateCurrentPage(fileId, savedPage);
     }
   };
-
-  useEffect(() => {
-    const element = pageAreaRef.current;
-    if (!element) return;
-
-    const measure = () => setPageArea(element.clientWidth);
-    measure();
-
-    if (typeof ResizeObserver === 'undefined') {
-      window.addEventListener('resize', measure);
-      return () => window.removeEventListener('resize', measure);
-    }
-
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
 
   const goToPrevPage = () => {
     const newPage = Math.max(1, (currentPage[fileId] || 1) - 1);
@@ -1074,7 +1096,10 @@ const ViewPdf = () => {
                         pageNumber={pageNumber}
                         renderAnnotationLayer={false}
                         renderTextLayer={true}
-                        width={Math.max(280, Math.round(((pageArea || 640) - 24) * scale))}
+                        width={Math.max(
+                          280,
+                          Math.round(((pageArea || fallbackPageWidth()) - 24) * scale),
+                        )}
                         devicePixelRatio={Math.min(window.devicePixelRatio || 1, 2)}
                       />
                     </Document>
