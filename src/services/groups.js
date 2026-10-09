@@ -20,8 +20,19 @@ export const groupsApi = {
     return data?.group ?? null;
   },
 
-  async create({ name, description }) {
-    const { data } = await axiosConfig.post(apiEndpoints.GROUPS, { name, description });
+  /**
+   * Make a group.
+   *
+   * `community` binds it to a community, which is what makes a group created
+   * from a community's Groups tab actually land inside that community rather
+   * than beside it.
+   */
+  async create({ name, description, community }) {
+    const { data } = await axiosConfig.post(apiEndpoints.GROUPS, {
+      name,
+      description,
+      ...(community ? { community } : {}),
+    });
     return data?.group ?? null;
   },
 
