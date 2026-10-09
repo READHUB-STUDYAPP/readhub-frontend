@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "study.readhub.app",
+      "sha256_cert_fingerprints": [
+        "12:6F:7A:5E:65:F6:98:D4:A8:1E:49:F1:EA:0E:15:5C:93:9C:BB:A0:5A:7D:5A:AD:31:1F:DD:79:DA:99:E3:15"
+      ]
+    }
+  }
+]
