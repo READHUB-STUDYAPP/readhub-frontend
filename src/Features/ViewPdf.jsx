@@ -190,12 +190,23 @@ const ViewPdf = () => {
   // How much of each watched page is on screen right now.
   const ratiosRef = useRef(new Map());
 
+  /*
+    Registers a slot, whether or not the observer exists yet.
+
+    Ref callbacks run while React commits, which is before effects. The
+    observer is created in an effect, so on the first render with scrolling on
+    there was nothing to register with and every slot was dropped on the floor
+    -- silently, because the observer simply never had anything to watch. The
+    pages drawn at that moment stayed the only pages drawn, however far the
+    reader scrolled.
+
+    Slots are kept here regardless, and the effect picks up whatever is already
+    registered when it builds the observer.
+  */
   const observeSlot = useCallback((node, page) => {
-    if (!slotObserverRef.current) return;
-    if (node) {
-      slotsRef.current.set(node, page);
-      slotObserverRef.current.observe(node);
-    }
+    if (!node) return;
+    slotsRef.current.set(node, page);
+    slotObserverRef.current?.observe(node);
   }, []);
 
   useEffect(() => {
@@ -261,6 +272,10 @@ const ViewPdf = () => {
     );
 
     slotObserverRef.current = observer;
+    // Anything that mounted before this effect ran -- which on the first
+    // render is every slot on screen.
+    for (const node of slotsRef.current.keys()) observer.observe(node);
+
     return () => {
       observer.disconnect();
       slotObserverRef.current = null;
