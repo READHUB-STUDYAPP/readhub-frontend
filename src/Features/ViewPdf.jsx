@@ -187,6 +187,8 @@ const ViewPdf = () => {
 
   const slotObserverRef = useRef(null);
   const slotsRef = useRef(new Map());
+  // How much of each watched page is on screen right now.
+  const ratiosRef = useRef(new Map());
 
   const observeSlot = useCallback((node, page) => {
     if (!slotObserverRef.current) return;
@@ -222,13 +224,33 @@ const ViewPdf = () => {
           return changed ? next : current;
         });
 
-        // The page the reader is actually on is the one covering most of the
-        // screen, not merely the first one touching it.
-        const best = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        const page = best && slotsRef.current.get(best.target);
-        if (page) updateCurrentPage(fileId, page);
+        /*
+          The page the reader is on is whichever covers most of the screen.
+
+          Decided across every slot being watched, not just the ones in this
+          callback. An observer only reports what *changed*, so a quick scroll
+          can deliver a batch in which nothing is intersecting -- and picking
+          the best of those leaves the indicator stuck on page one while the
+          reader is most of the way through the book. Which matters more than
+          the number on screen: this is the position that gets recorded, and
+          from there it is what a reader's group and buddy see.
+        */
+        for (const entry of entries) {
+          const page = slotsRef.current.get(entry.target);
+          if (!page) continue;
+          if (entry.isIntersecting) ratiosRef.current.set(page, entry.intersectionRatio);
+          else ratiosRef.current.delete(page);
+        }
+
+        let bestPage = null;
+        let bestRatio = 0;
+        for (const [page, ratio] of ratiosRef.current) {
+          if (ratio > bestRatio) {
+            bestRatio = ratio;
+            bestPage = page;
+          }
+        }
+        if (bestPage) updateCurrentPage(fileId, bestPage);
       },
       {
         // A screen's worth either side, so a page is drawn before it is
@@ -243,6 +265,7 @@ const ViewPdf = () => {
       observer.disconnect();
       slotObserverRef.current = null;
       slotsRef.current = new Map();
+      ratiosRef.current = new Map();
     };
   }, [continuous, fileId, updateCurrentPage]);
 
