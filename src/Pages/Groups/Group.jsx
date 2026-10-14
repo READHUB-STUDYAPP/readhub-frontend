@@ -225,6 +225,10 @@ export default function Group() {
                     )}
                   </header>
 
+                  {/* These fill from the group's own reading now. A member's
+                      position comes from the book they open, not from anyone
+                      typing it in -- nothing ever wrote these rows before, so
+                      every bar sat at zero. */}
                   <ul className="flex flex-col gap-2">
                     {group.members.map((member) => {
                       const hidden = member.visible === false;

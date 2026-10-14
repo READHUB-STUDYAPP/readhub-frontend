@@ -93,7 +93,7 @@ export function FileProvider({ children }) {
       };
     });
     // Run once on mount only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   // Persist timer state only for the current tab/session.

@@ -16,9 +16,7 @@
  * has them, this does nothing.
  */
 
-/* eslint-disable no-extend-native -- Extending the built-in is precisely a
-   polyfill's job. Both are defined only when absent, match the specified
-   behaviour, and are non-enumerable like the real thing. */
+ 
 
 const define = (name, implementation) => {
   if (typeof Map.prototype[name] === 'function') return;

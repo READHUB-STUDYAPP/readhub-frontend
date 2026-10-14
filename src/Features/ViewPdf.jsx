@@ -141,6 +141,7 @@ const ViewPdf = () => {
     observer.observe(node);
     pageObserverRef.current = observer;
   }, []);
+
   const [scaleFont, setScaleFont] = useState(16);
 
   // Track if we've initiated a fetch
@@ -163,6 +164,164 @@ const ViewPdf = () => {
   const [scrollDirection, setScrollDirection] = useState(
     () => localStorage.getItem('pdfScrollDirection') || 'horizontal',
   );
+
+  /* ------------------------------------------------- continuous scrolling */
+
+  /*
+    "Vertical" used to mean only that a swipe up turned the page -- the reader
+    still showed one page at a time, which is not what anybody means by
+    scrolling through a PDF. It now renders the whole book in one column.
+
+    Every page gets a slot of the right height from the start, so the scrollbar
+    reflects the real length of the book and does not jump as pages render. Only
+    the slots near the viewport actually mount a <Page>: a 300-page book drawn
+    all at once is hundreds of canvases, and the tab runs out of memory long
+    before the reader gets anywhere.
+  */
+  const continuous = scrollDirection === 'vertical';
+
+  // Height over width. A4 until the first page reports its real shape, which
+  // is close enough that slots do not visibly resize on the first render.
+  const [pageAspect, setPageAspect] = useState(1.414);
+  const [nearViewport, setNearViewport] = useState(() => new Set([1]));
+
+  const slotObserverRef = useRef(null);
+  const slotsRef = useRef(new Map());
+  // How much of each watched page is on screen right now.
+  const ratiosRef = useRef(new Map());
+
+  /*
+    The observer reads these rather than closing over them.
+
+    It used to depend on `updateCurrentPage` and `fileId`, and its cleanup
+    emptied the slot registry. `updateCurrentPage` is a new function on every
+    render, so the effect tore the observer down and rebuilt it constantly --
+    each time against a registry it had just cleared, while React had no reason
+    to re-run the ref callbacks that fill it. The observer ended up watching
+    nothing, which is why the pages drawn at mount stayed the only pages drawn.
+  */
+  const reportPageRef = useRef(() => {});
+  useEffect(() => {
+    reportPageRef.current = (page) => updateCurrentPage(fileId, page);
+  }, [updateCurrentPage, fileId]);
+
+  /*
+    Registers a slot, whether or not the observer exists yet.
+
+    Ref callbacks run while React commits, which is before effects. The
+    observer is created in an effect, so on the first render with scrolling on
+    there was nothing to register with and every slot was dropped on the floor
+    -- silently, because the observer simply never had anything to watch. The
+    pages drawn at that moment stayed the only pages drawn, however far the
+    reader scrolled.
+
+    Slots are kept here regardless, and the effect picks up whatever is already
+    registered when it builds the observer.
+  */
+  const observeSlot = useCallback((node, page) => {
+    if (!node) return;
+    slotsRef.current.set(node, page);
+    slotObserverRef.current?.observe(node);
+  }, []);
+
+  useEffect(() => {
+    if (!continuous || typeof IntersectionObserver === 'undefined') return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        setNearViewport((current) => {
+          const next = new Set(current);
+          let changed = false;
+          for (const entry of entries) {
+            const page = slotsRef.current.get(entry.target);
+            if (!page) continue;
+            const has = next.has(page);
+            if (entry.isIntersecting && !has) {
+              next.add(page);
+              changed = true;
+            } else if (!entry.isIntersecting && has) {
+              // Dropped again once it is well out of the way. Without this the
+              // set only ever grew, and reading to the end of a long book left
+              // every page mounted -- exactly what the slots exist to prevent.
+              next.delete(page);
+              changed = true;
+            }
+          }
+          return changed ? next : current;
+        });
+
+        /*
+          The page the reader is on is whichever covers most of the screen.
+
+          Decided across every slot being watched, not just the ones in this
+          callback. An observer only reports what *changed*, so a quick scroll
+          can deliver a batch in which nothing is intersecting -- and picking
+          the best of those leaves the indicator stuck on page one while the
+          reader is most of the way through the book. Which matters more than
+          the number on screen: this is the position that gets recorded, and
+          from there it is what a reader's group and buddy see.
+        */
+        for (const entry of entries) {
+          const page = slotsRef.current.get(entry.target);
+          if (!page) continue;
+          if (entry.isIntersecting) ratiosRef.current.set(page, entry.intersectionRatio);
+          else ratiosRef.current.delete(page);
+        }
+
+        let bestPage = null;
+        let bestRatio = 0;
+        for (const [page, ratio] of ratiosRef.current) {
+          if (ratio > bestRatio) {
+            bestRatio = ratio;
+            bestPage = page;
+          }
+        }
+        if (bestPage) reportPageRef.current(bestPage);
+      },
+      {
+        // A screen's worth either side, so a page is drawn before it is
+        // scrolled to rather than appearing blank and filling in late.
+        rootMargin: '100% 0px',
+        threshold: [0, 0.25, 0.5, 0.75],
+      },
+    );
+
+    slotObserverRef.current = observer;
+    // Anything that mounted before this effect ran -- which on the first
+    // render is every slot on screen.
+    for (const node of slotsRef.current.keys()) observer.observe(node);
+
+    return () => {
+      observer.disconnect();
+      slotObserverRef.current = null;
+      ratiosRef.current = new Map();
+    };
+  }, [continuous]);
+
+  /** Moves the view to a page. Only meaningful while the whole book is drawn. */
+  const scrollToPage = useCallback((number) => {
+    const slot = document.querySelector(`[data-page="${number}"]`);
+    if (slot) slot.scrollIntoView({ block: 'start' });
+  }, []);
+
+  /*
+    Opening the book puts the reader back where they stopped.
+
+    Once per file: the slot has to exist before it can be scrolled to, so this
+    waits for the page count, and the guard stops it dragging the reader back
+    to the saved page every time they scroll somewhere else.
+  */
+  const restoredRef = useRef(null);
+  useEffect(() => {
+    if (!continuous || !numPages || restoredRef.current === fileId) return;
+    const target = Math.min(numPages, Math.max(1, savedPageRef.current || 1));
+    restoredRef.current = fileId;
+    // After the slots have been laid out, not during the same paint.
+    const id = requestAnimationFrame(() => scrollToPage(target));
+    return () => cancelAnimationFrame(id);
+  }, [continuous, numPages, fileId, scrollToPage]);
+
+
 
   const getSelectionOffsetsWithin = (containerEl) => {
     try {
@@ -228,6 +387,12 @@ const ViewPdf = () => {
   }, [fileId, files, loading, hasFetched, booksError, selectFile, navigate]);
 
   const savedPage = activeFile?.lastPageRead || 1;
+  // Read through a ref by the restore effect, so moving through the book does
+  // not make it fire again.
+  const savedPageRef = useRef(savedPage);
+  useEffect(() => {
+    savedPageRef.current = savedPage;
+  }, [savedPage]);
   const pageNumber = currentPage[fileId] || savedPage;
 
   // Reading time tracking (start when a book is open, end when leaving ViewPdf)
@@ -365,7 +530,22 @@ const ViewPdf = () => {
       const ready = layer && layer.childElementCount > 0;
 
       if (ready) {
-        highlightTextInPDF('.textLayer', getHighlights(activeFileId), pageNumber);
+        const marks = getHighlights(activeFileId);
+
+        if (continuous) {
+          // Every drawn page carries its own text layer now, so each is
+          // highlighted against its own page number. Highlighting them all
+          // through one selector would stamp page one's marks onto whichever
+          // page happened to match first.
+          document.querySelectorAll('[data-page]').forEach((slot) => {
+            const number = Number(slot.getAttribute('data-page'));
+            if (!number || !slot.querySelector('.textLayer')) return;
+            highlightTextInPDF(`[data-page="${number}"] .textLayer`, marks, number);
+          });
+          return;
+        }
+
+        highlightTextInPDF('.textLayer', marks, pageNumber);
         return;
       }
 
@@ -374,7 +554,7 @@ const ViewPdf = () => {
 
     timeoutId = setTimeout(apply, 50);
     return () => clearTimeout(timeoutId);
-  }, [viewMode, pageNumber, activeFileId, getHighlights, highlights]);
+  }, [viewMode, pageNumber, activeFileId, getHighlights, highlights, continuous, nearViewport]);
 
   // Handle text selection
   const handleTextSelection = () => {
@@ -520,11 +700,14 @@ const ViewPdf = () => {
   const goToPrevPage = () => {
     const newPage = Math.max(1, (currentPage[fileId] || 1) - 1);
     updateCurrentPage(fileId, newPage);
+    if (continuous) scrollToPage(newPage);
   };
 
   const goToNextPage = () => {
     const newPage = Math.min(numPages, (currentPage[fileId] || 1) + 1);
     updateCurrentPage(fileId, newPage);
+    // With the whole book drawn, changing the number moves nothing on its own.
+    if (continuous) scrollToPage(newPage);
   };
 
   const jumpToPage = (page) => {
@@ -1165,7 +1348,13 @@ const ViewPdf = () => {
                         </div>
                       }
                       error={<div>Failed to load PDF.</div>}
-                      className={`flex overflow-auto`}
+                      /*
+                        A column when the whole book is drawn. The default here
+                        is a flex *row*, which laid every page slot side by side
+                        at the same vertical offset -- a book twelve screens
+                        wide and one page tall.
+                      */
+                      className={continuous ? 'flex flex-col items-center' : 'flex overflow-auto'}
                     >
                       {/*
                         `width` rather than `scale`, so the page is drawn to fit
@@ -1178,16 +1367,67 @@ const ViewPdf = () => {
                         3 asks for 2.25 times the pixels for sharpness nobody
                         can see at reading distance.
                       */}
-                      <Page
-                        pageNumber={pageNumber}
-                        renderAnnotationLayer={false}
-                        renderTextLayer={true}
-                        width={Math.max(
+                      {(() => {
+                        const pageWidth = Math.max(
                           280,
                           Math.round(((pageArea || fallbackPageWidth()) - 24) * scale),
-                        )}
-                        devicePixelRatio={Math.min(window.devicePixelRatio || 1, 2)}
-                      />
+                        );
+                        const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+
+                        if (!continuous) {
+                          return (
+                            <Page
+                              pageNumber={pageNumber}
+                              renderAnnotationLayer={false}
+                              renderTextLayer={true}
+                              width={pageWidth}
+                              devicePixelRatio={pixelRatio}
+                              onLoadSuccess={(page) =>
+                                setPageAspect(page.height / page.width || 1.414)
+                              }
+                            />
+                          );
+                        }
+
+                        // One column, every page. The slot holds its height
+                        // whether or not the page inside it has rendered, so
+                        // the scrollbar means something from the first frame
+                        // and nothing jumps as pages arrive.
+                        return Array.from({ length: numPages || 0 }, (_, index) => {
+                          const number = index + 1;
+                          const mounted = nearViewport.has(number);
+
+                          return (
+                            <div
+                              key={number}
+                              ref={(node) => observeSlot(node, number)}
+                              data-page={number}
+                              className="relative mx-auto mb-4 w-full"
+                              style={{ height: mounted ? undefined : pageWidth * pageAspect }}
+                            >
+                              {mounted ? (
+                                <Page
+                                  pageNumber={number}
+                                  renderAnnotationLayer={false}
+                                  renderTextLayer={true}
+                                  width={pageWidth}
+                                  devicePixelRatio={pixelRatio}
+                                  onLoadSuccess={(page) =>
+                                    setPageAspect(page.height / page.width || 1.414)
+                                  }
+                                />
+                              ) : (
+                                <div
+                                  aria-hidden="true"
+                                  className={`h-full w-full rounded ${
+                                    darkToggle ? 'bg-white/5' : 'bg-black/5'
+                                  }`}
+                                />
+                              )}
+                            </div>
+                          );
+                        });
+                      })()}
                     </Document>
                   </div>
                 ) : (
