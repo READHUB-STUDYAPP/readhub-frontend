@@ -207,8 +207,15 @@ const ViewPdf = () => {
           for (const entry of entries) {
             const page = slotsRef.current.get(entry.target);
             if (!page) continue;
-            if (entry.isIntersecting && !next.has(page)) {
+            const has = next.has(page);
+            if (entry.isIntersecting && !has) {
               next.add(page);
+              changed = true;
+            } else if (!entry.isIntersecting && has) {
+              // Dropped again once it is well out of the way. Without this the
+              // set only ever grew, and reading to the end of a long book left
+              // every page mounted -- exactly what the slots exist to prevent.
+              next.delete(page);
               changed = true;
             }
           }
@@ -1289,7 +1296,13 @@ const ViewPdf = () => {
                         </div>
                       }
                       error={<div>Failed to load PDF.</div>}
-                      className={`flex overflow-auto`}
+                      /*
+                        A column when the whole book is drawn. The default here
+                        is a flex *row*, which laid every page slot side by side
+                        at the same vertical offset -- a book twelve screens
+                        wide and one page tall.
+                      */
+                      className={continuous ? 'flex flex-col items-center' : 'flex overflow-auto'}
                     >
                       {/*
                         `width` rather than `scale`, so the page is drawn to fit
