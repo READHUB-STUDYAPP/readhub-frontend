@@ -383,9 +383,16 @@ function SharedRead({ read, meIsNot, partnerName, onProgress }) {
         <Bar label={partnerName} row={partnerRow} target={read.targetPage} />
       </div>
 
+      {/* Progress arrives on its own now: reading the book in ReadHub moves
+          both bars. This stays for a paper copy, or a book being read
+          somewhere else, so it no longer leads. */}
+      <p className="text-label_Small text-ink-faint">
+        Your page updates as you read. Set it by hand if you are reading elsewhere.
+      </p>
+
       <form onSubmit={save} className="flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1">
-          <span className="text-label_Small text-ink-faint">What page are you on?</span>
+          <span className="text-label_Small text-ink-faint">Page you are on</span>
           <input
             type="number"
             min={0}
