@@ -191,6 +191,21 @@ const ViewPdf = () => {
   const ratiosRef = useRef(new Map());
 
   /*
+    The observer reads these rather than closing over them.
+
+    It used to depend on `updateCurrentPage` and `fileId`, and its cleanup
+    emptied the slot registry. `updateCurrentPage` is a new function on every
+    render, so the effect tore the observer down and rebuilt it constantly --
+    each time against a registry it had just cleared, while React had no reason
+    to re-run the ref callbacks that fill it. The observer ended up watching
+    nothing, which is why the pages drawn at mount stayed the only pages drawn.
+  */
+  const reportPageRef = useRef(() => {});
+  useEffect(() => {
+    reportPageRef.current = (page) => updateCurrentPage(fileId, page);
+  }, [updateCurrentPage, fileId]);
+
+  /*
     Registers a slot, whether or not the observer exists yet.
 
     Ref callbacks run while React commits, which is before effects. The
@@ -261,7 +276,7 @@ const ViewPdf = () => {
             bestPage = page;
           }
         }
-        if (bestPage) updateCurrentPage(fileId, bestPage);
+        if (bestPage) reportPageRef.current(bestPage);
       },
       {
         // A screen's worth either side, so a page is drawn before it is
@@ -279,10 +294,9 @@ const ViewPdf = () => {
     return () => {
       observer.disconnect();
       slotObserverRef.current = null;
-      slotsRef.current = new Map();
       ratiosRef.current = new Map();
     };
-  }, [continuous, fileId, updateCurrentPage]);
+  }, [continuous]);
 
   /** Moves the view to a page. Only meaningful while the whole book is drawn. */
   const scrollToPage = useCallback((number) => {
