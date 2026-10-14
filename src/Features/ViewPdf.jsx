@@ -141,6 +141,7 @@ const ViewPdf = () => {
     observer.observe(node);
     pageObserverRef.current = observer;
   }, []);
+
   const [scaleFont, setScaleFont] = useState(16);
 
   // Track if we've initiated a fetch
@@ -163,6 +164,105 @@ const ViewPdf = () => {
   const [scrollDirection, setScrollDirection] = useState(
     () => localStorage.getItem('pdfScrollDirection') || 'horizontal',
   );
+
+  /* ------------------------------------------------- continuous scrolling */
+
+  /*
+    "Vertical" used to mean only that a swipe up turned the page -- the reader
+    still showed one page at a time, which is not what anybody means by
+    scrolling through a PDF. It now renders the whole book in one column.
+
+    Every page gets a slot of the right height from the start, so the scrollbar
+    reflects the real length of the book and does not jump as pages render. Only
+    the slots near the viewport actually mount a <Page>: a 300-page book drawn
+    all at once is hundreds of canvases, and the tab runs out of memory long
+    before the reader gets anywhere.
+  */
+  const continuous = scrollDirection === 'vertical';
+
+  // Height over width. A4 until the first page reports its real shape, which
+  // is close enough that slots do not visibly resize on the first render.
+  const [pageAspect, setPageAspect] = useState(1.414);
+  const [nearViewport, setNearViewport] = useState(() => new Set([1]));
+
+  const slotObserverRef = useRef(null);
+  const slotsRef = useRef(new Map());
+
+  const observeSlot = useCallback((node, page) => {
+    if (!slotObserverRef.current) return;
+    if (node) {
+      slotsRef.current.set(node, page);
+      slotObserverRef.current.observe(node);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!continuous || typeof IntersectionObserver === 'undefined') return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        setNearViewport((current) => {
+          const next = new Set(current);
+          let changed = false;
+          for (const entry of entries) {
+            const page = slotsRef.current.get(entry.target);
+            if (!page) continue;
+            if (entry.isIntersecting && !next.has(page)) {
+              next.add(page);
+              changed = true;
+            }
+          }
+          return changed ? next : current;
+        });
+
+        // The page the reader is actually on is the one covering most of the
+        // screen, not merely the first one touching it.
+        const best = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        const page = best && slotsRef.current.get(best.target);
+        if (page) updateCurrentPage(fileId, page);
+      },
+      {
+        // A screen's worth either side, so a page is drawn before it is
+        // scrolled to rather than appearing blank and filling in late.
+        rootMargin: '100% 0px',
+        threshold: [0, 0.25, 0.5, 0.75],
+      },
+    );
+
+    slotObserverRef.current = observer;
+    return () => {
+      observer.disconnect();
+      slotObserverRef.current = null;
+      slotsRef.current = new Map();
+    };
+  }, [continuous, fileId, updateCurrentPage]);
+
+  /** Moves the view to a page. Only meaningful while the whole book is drawn. */
+  const scrollToPage = useCallback((number) => {
+    const slot = document.querySelector(`[data-page="${number}"]`);
+    if (slot) slot.scrollIntoView({ block: 'start' });
+  }, []);
+
+  /*
+    Opening the book puts the reader back where they stopped.
+
+    Once per file: the slot has to exist before it can be scrolled to, so this
+    waits for the page count, and the guard stops it dragging the reader back
+    to the saved page every time they scroll somewhere else.
+  */
+  const restoredRef = useRef(null);
+  useEffect(() => {
+    if (!continuous || !numPages || restoredRef.current === fileId) return;
+    const target = Math.min(numPages, Math.max(1, savedPageRef.current || 1));
+    restoredRef.current = fileId;
+    // After the slots have been laid out, not during the same paint.
+    const id = requestAnimationFrame(() => scrollToPage(target));
+    return () => cancelAnimationFrame(id);
+  }, [continuous, numPages, fileId, scrollToPage]);
+
+
 
   const getSelectionOffsetsWithin = (containerEl) => {
     try {
@@ -228,6 +328,12 @@ const ViewPdf = () => {
   }, [fileId, files, loading, hasFetched, booksError, selectFile, navigate]);
 
   const savedPage = activeFile?.lastPageRead || 1;
+  // Read through a ref by the restore effect, so moving through the book does
+  // not make it fire again.
+  const savedPageRef = useRef(savedPage);
+  useEffect(() => {
+    savedPageRef.current = savedPage;
+  }, [savedPage]);
   const pageNumber = currentPage[fileId] || savedPage;
 
   // Reading time tracking (start when a book is open, end when leaving ViewPdf)
@@ -365,7 +471,22 @@ const ViewPdf = () => {
       const ready = layer && layer.childElementCount > 0;
 
       if (ready) {
-        highlightTextInPDF('.textLayer', getHighlights(activeFileId), pageNumber);
+        const marks = getHighlights(activeFileId);
+
+        if (continuous) {
+          // Every drawn page carries its own text layer now, so each is
+          // highlighted against its own page number. Highlighting them all
+          // through one selector would stamp page one's marks onto whichever
+          // page happened to match first.
+          document.querySelectorAll('[data-page]').forEach((slot) => {
+            const number = Number(slot.getAttribute('data-page'));
+            if (!number || !slot.querySelector('.textLayer')) return;
+            highlightTextInPDF(`[data-page="${number}"] .textLayer`, marks, number);
+          });
+          return;
+        }
+
+        highlightTextInPDF('.textLayer', marks, pageNumber);
         return;
       }
 
@@ -374,7 +495,7 @@ const ViewPdf = () => {
 
     timeoutId = setTimeout(apply, 50);
     return () => clearTimeout(timeoutId);
-  }, [viewMode, pageNumber, activeFileId, getHighlights, highlights]);
+  }, [viewMode, pageNumber, activeFileId, getHighlights, highlights, continuous, nearViewport]);
 
   // Handle text selection
   const handleTextSelection = () => {
@@ -520,11 +641,14 @@ const ViewPdf = () => {
   const goToPrevPage = () => {
     const newPage = Math.max(1, (currentPage[fileId] || 1) - 1);
     updateCurrentPage(fileId, newPage);
+    if (continuous) scrollToPage(newPage);
   };
 
   const goToNextPage = () => {
     const newPage = Math.min(numPages, (currentPage[fileId] || 1) + 1);
     updateCurrentPage(fileId, newPage);
+    // With the whole book drawn, changing the number moves nothing on its own.
+    if (continuous) scrollToPage(newPage);
   };
 
   const jumpToPage = (page) => {
@@ -1178,16 +1302,67 @@ const ViewPdf = () => {
                         3 asks for 2.25 times the pixels for sharpness nobody
                         can see at reading distance.
                       */}
-                      <Page
-                        pageNumber={pageNumber}
-                        renderAnnotationLayer={false}
-                        renderTextLayer={true}
-                        width={Math.max(
+                      {(() => {
+                        const pageWidth = Math.max(
                           280,
                           Math.round(((pageArea || fallbackPageWidth()) - 24) * scale),
-                        )}
-                        devicePixelRatio={Math.min(window.devicePixelRatio || 1, 2)}
-                      />
+                        );
+                        const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+
+                        if (!continuous) {
+                          return (
+                            <Page
+                              pageNumber={pageNumber}
+                              renderAnnotationLayer={false}
+                              renderTextLayer={true}
+                              width={pageWidth}
+                              devicePixelRatio={pixelRatio}
+                              onLoadSuccess={(page) =>
+                                setPageAspect(page.height / page.width || 1.414)
+                              }
+                            />
+                          );
+                        }
+
+                        // One column, every page. The slot holds its height
+                        // whether or not the page inside it has rendered, so
+                        // the scrollbar means something from the first frame
+                        // and nothing jumps as pages arrive.
+                        return Array.from({ length: numPages || 0 }, (_, index) => {
+                          const number = index + 1;
+                          const mounted = nearViewport.has(number);
+
+                          return (
+                            <div
+                              key={number}
+                              ref={(node) => observeSlot(node, number)}
+                              data-page={number}
+                              className="relative mx-auto mb-4 w-full"
+                              style={{ height: mounted ? undefined : pageWidth * pageAspect }}
+                            >
+                              {mounted ? (
+                                <Page
+                                  pageNumber={number}
+                                  renderAnnotationLayer={false}
+                                  renderTextLayer={true}
+                                  width={pageWidth}
+                                  devicePixelRatio={pixelRatio}
+                                  onLoadSuccess={(page) =>
+                                    setPageAspect(page.height / page.width || 1.414)
+                                  }
+                                />
+                              ) : (
+                                <div
+                                  aria-hidden="true"
+                                  className={`h-full w-full rounded ${
+                                    darkToggle ? 'bg-white/5' : 'bg-black/5'
+                                  }`}
+                                />
+                              )}
+                            </div>
+                          );
+                        });
+                      })()}
                     </Document>
                   </div>
                 ) : (
