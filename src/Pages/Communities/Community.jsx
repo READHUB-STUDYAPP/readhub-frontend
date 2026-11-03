@@ -191,7 +191,7 @@ export default function Community() {
       {tab === 'challenges' && <Challenges communityId={communityId} role={role} />}
       {tab === 'activities' && <Activities communityId={communityId} />}
       {tab === 'members' && <Members communityId={communityId} role={role} />}
-      {tab === 'about' && <About community={community} onChanged={load} />}
+      {tab === 'about' && <About community={community} onChanged={load} role={role} />}
     </div>
   );
 }
@@ -719,8 +719,17 @@ function Members({ communityId, role }) {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState('');
 
-  useEffect(() => {
+  /*
+    Who may do what, straight from the server's own table rather than a guess.
+    Assigning a role is the owner's alone; removing somebody is an admin's too.
+    Showing a control that the API will refuse is worse than not showing it.
+  */
+  const mayAssignRoles = role === 'owner';
+  const mayRemove = canAdmin(role);
+
+  const load = useCallback(() => {
     communitiesApi
       .members(communityId, query)
       .then((list) => {
@@ -730,6 +739,40 @@ function Members({ communityId, role }) {
       .catch((err) => setError(err?.response?.data?.message || 'Could not load the members.'))
       .finally(() => setLoading(false));
   }, [communityId, query]);
+
+  useEffect(load, [load]);
+
+  const changeRole = async (member, next) => {
+    setBusy(member._id);
+    try {
+      await communitiesApi.setRole(communityId, member.user?._id, next);
+      toast.success(
+        next === 'member'
+          ? `${member.user?.username ?? 'They'} is now a member`
+          : `${member.user?.username ?? 'They'} is now ${next === 'admin' ? 'an' : 'a'} ${next}`,
+      );
+      load();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not change that role.');
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const remove = async (member) => {
+    const name = member.user?.username ?? 'this member';
+    if (!window.confirm(`Remove ${name} from the community? They can be invited back.`)) return;
+    setBusy(member._id);
+    try {
+      await communitiesApi.removeMember(communityId, member.user?._id);
+      toast.success(`${name} removed`);
+      load();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not remove them.');
+    } finally {
+      setBusy('');
+    }
+  };
 
   if (loading) return <Skeleton rows={4} />;
   if (error) return <Empty title="Member list unavailable" body={error} />;
@@ -748,29 +791,80 @@ function Members({ communityId, role }) {
       </div>
 
       <ul className="flex flex-col">
-        {members.map((member) => (
-          <li
-            key={member._id}
-            className="flex items-center gap-3 border-b border-line py-3 last:border-b-0"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-wash text-label_Large font-bold text-brand">
-              {member.user?.username?.[0]?.toUpperCase() ?? '?'}
-            </span>
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate text-label_Large font-semibold text-ink">
-                {member.user?.username ?? 'Reader'}
+        {members.map((member) => {
+          const isOwner = member.role === 'owner';
+          const name = member.user?.username ?? 'Reader';
+
+          return (
+            <li
+              key={member._id}
+              className="flex flex-wrap items-center gap-3 border-b border-line py-3 last:border-b-0"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-wash text-label_Large font-bold text-brand">
+                {name[0]?.toUpperCase() ?? '?'}
               </span>
-              <span className="text-label_Small text-ink-faint">
-                Joined {new Date(member.joinedAt).toLocaleDateString()}
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-label_Large font-semibold text-ink">{name}</span>
+                <span className="text-label_Small text-ink-faint">
+                  Joined {new Date(member.joinedAt).toLocaleDateString()}
+                </span>
               </span>
-            </span>
-            {member.role !== 'member' && (
-              <span className="shrink-0 rounded-full bg-warning/15 px-3 py-1 text-label_Small font-semibold capitalize text-warning">
+
+              {/*
+                Every role is named, not only the unusual ones. A club owner
+                looking down this list is asking "who runs this?", and a blank
+                where a plain member sits answers that faster than nothing at
+                all did.
+              */}
+              <span
+                className={`shrink-0 rounded-full px-3 py-1 text-label_Small font-semibold capitalize ${
+                  isOwner
+                    ? 'bg-brand text-white'
+                    : member.role === 'admin'
+                      ? 'bg-brand-wash text-brand'
+                      : member.role === 'moderator'
+                        ? 'bg-warning/15 text-warning'
+                        : 'bg-surface-variant text-ink-soft'
+                }`}
+              >
                 {member.role}
               </span>
-            )}
-          </li>
-        ))}
+
+              {(mayAssignRoles || mayRemove) && !isOwner && (
+                <span className="flex shrink-0 items-center gap-2">
+                  {mayAssignRoles && (
+                    <label className="sr-only" htmlFor={`role-${member._id}`}>
+                      Role for {name}
+                    </label>
+                  )}
+                  {mayAssignRoles && (
+                    <select
+                      id={`role-${member._id}`}
+                      value={member.role}
+                      disabled={busy === member._id}
+                      onChange={(event) => changeRole(member, event.target.value)}
+                      className="rounded-full border border-line bg-surface px-3 py-1.5 text-label_Small text-ink outline-none focus:border-brand disabled:opacity-60"
+                    >
+                      <option value="member">Member</option>
+                      <option value="moderator">Moderator</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  )}
+                  {mayRemove && (
+                    <button
+                      type="button"
+                      disabled={busy === member._id}
+                      onClick={() => remove(member)}
+                      className="rounded-full border border-line px-3 py-1.5 text-label_Small text-ink-soft transition-colors hover:border-danger hover:text-danger disabled:opacity-60"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </span>
+              )}
+            </li>
+          );
+        })}
       </ul>
 
       {canAdmin(role) && <JoinRequests communityId={communityId} />}
@@ -836,8 +930,27 @@ function JoinRequests({ communityId }) {
 
 /* ----------------------------------------------------------------- about */
 
-function About({ community, onChanged }) {
+function About({ community, onChanged, role }) {
   const [copied, setCopied] = useState(false);
+  const [editingRules, setEditingRules] = useState(false);
+  const [rules, setRules] = useState(community.rules ?? '');
+  const [savingRules, setSavingRules] = useState(false);
+
+  const mayEdit = canAdmin(role);
+
+  const saveRules = async () => {
+    setSavingRules(true);
+    try {
+      await communitiesApi.update(community._id, { rules: rules.trim() });
+      toast.success('Rules saved.');
+      setEditingRules(false);
+      onChanged();
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'Could not save the rules.');
+    } finally {
+      setSavingRules(false);
+    }
+  };
 
   const inviteLink = community.inviteCode
     ? `${window.location.origin}/communities/join/${community.inviteCode}`
@@ -876,6 +989,74 @@ function About({ community, onChanged }) {
         <p className="text-body_Medium text-ink-soft">
           {community.description || 'This community has not written a description yet.'}
         </p>
+      </section>
+
+      {/*
+        The rules a club is actually run on. Shown to everyone, written by
+        whoever may edit the community -- a member who cannot find the rules
+        cannot follow them.
+      */}
+      <section className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-label_Medium font-semibold uppercase tracking-wide text-ink-faint">
+            Rules
+          </h2>
+          {mayEdit && !editingRules && (
+            <button
+              type="button"
+              onClick={() => {
+                setRules(community.rules ?? '');
+                setEditingRules(true);
+              }}
+              className="rounded-full border border-line px-3 py-1 text-label_Small text-ink-soft transition-colors hover:bg-surface-variant"
+            >
+              {community.rules ? 'Edit' : 'Add rules'}
+            </button>
+          )}
+        </div>
+
+        {editingRules ? (
+          <div className="flex flex-col gap-2">
+            <label className="sr-only" htmlFor="community-rules">
+              Community rules
+            </label>
+            <textarea
+              id="community-rules"
+              value={rules}
+              onChange={(event) => setRules(event.target.value)}
+              rows={8}
+              maxLength={4000}
+              placeholder="One rule per line. For example: read the chapter before the meeting; keep spoilers below a blank line."
+              className={`${authInputClass(false)} min-h-[160px] resize-y`}
+            />
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={saveRules}
+                disabled={savingRules}
+                className="rounded-full bg-brand px-5 py-2 text-body_Small font-semibold text-white transition-colors hover:bg-brand-strong disabled:opacity-60"
+              >
+                {savingRules ? 'Saving…' : 'Save rules'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingRules(false)}
+                className="rounded-full border border-line px-5 py-2 text-body_Small text-ink-soft transition-colors hover:bg-surface-variant"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : community.rules ? (
+          // Written as lines, shown as lines.
+          <p className="whitespace-pre-wrap text-body_Medium text-ink-soft">{community.rules}</p>
+        ) : (
+          <p className="text-body_Medium text-ink-faint">
+            {mayEdit
+              ? 'No rules yet. Members read these before they join in.'
+              : 'This community has not set any rules.'}
+          </p>
+        )}
       </section>
 
       <div className="grid grid-cols-2 gap-4">
