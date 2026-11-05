@@ -94,7 +94,26 @@ export default function BuddySpace() {
   const onProgress = async (page) => {
     try {
       const updated = await buddiesApi.setProgress(buddyId, active._id, page);
-      setReads((current) => current.map((read) => (read._id === updated._id ? updated : read)));
+      /*
+        Merged, not replaced.
+
+        The progress endpoint answers with the bare read, so swapping the whole
+        row in would drop the populated book and the ids worked out for this
+        viewer -- and the cover would vanish the moment somebody typed a page.
+      */
+      setReads((current) =>
+        current.map((read) =>
+          read._id === updated._id
+            ? {
+                ...updated,
+                book: read.book,
+                myBookId: read.myBookId,
+                myBookFormat: read.myBookFormat,
+                canAddToLibrary: read.canAddToLibrary,
+              }
+            : read,
+        ),
+      );
       if (updated.status === 'completed') {
         toast.success(`You both finished ${updated.bookTitle}.`);
         await load();
@@ -200,6 +219,8 @@ export default function BuddySpace() {
             meIsNot={partnerId}
             partnerName={row.buddy?.username ?? 'Your buddy'}
             onProgress={onProgress}
+            buddyId={buddyId}
+            onAdded={load}
           />
         ) : (
           <div className="flex flex-col items-center gap-2 py-6 text-center">
@@ -351,7 +372,7 @@ export default function BuddySpace() {
  * a comparison -- ahead/behind -- is what the PRD rules out, so neither bar is
  * ever labelled relative to the other.
  */
-function SharedRead({ read, meIsNot, partnerName, onProgress }) {
+function SharedRead({ read, meIsNot, partnerName, onProgress, buddyId, onAdded }) {
   const partnerRow = read.progress.find((row) => String(row.user) === String(meIsNot));
   const myRow = read.progress.find((row) => String(row.user) !== String(meIsNot));
 
@@ -367,16 +388,7 @@ function SharedRead({ read, meIsNot, partnerName, onProgress }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="min-w-0 break-all text-body_Large font-semibold text-ink">
-          {read.bookTitle}
-        </p>
-        <p className="text-body_Small text-ink-soft">
-          {read.targetPage && `Target: page ${read.targetPage}`}
-          {read.targetPage && read.targetDate && ' · '}
-          {read.targetDate && `by ${new Date(read.targetDate).toLocaleDateString()}`}
-        </p>
-      </div>
+      <BookPanel read={read} buddyId={buddyId} onAdded={onAdded} />
 
       <div className="grid min-w-0 gap-3 sm:grid-cols-2">
         <Bar label="You" row={myRow} target={read.targetPage} />
@@ -409,6 +421,104 @@ function SharedRead({ read, meIsNot, partnerName, onProgress }) {
           {saving ? 'Saving…' : 'Update'}
         </button>
       </form>
+    </div>
+  );
+}
+
+/**
+ * The book itself, which the card used to leave out entirely.
+ *
+ * It showed a title and two bars, so the thing the pair had actually agreed to
+ * read was the one thing not on screen -- no cover, and nowhere to press to go
+ * and read it. Worse for the partner, who holds an id from somebody else's
+ * library: their reader would not open it and it was not among their books.
+ *
+ * Three states, and the third is the honest one rather than a dead button:
+ *
+ *   I have it          open it, and reading moves both bars by itself.
+ *   I can have it      one press to put it in my library.
+ *   I cannot have it   my buddy's own upload. Said plainly, with the only
+ *                      thing that would actually work.
+ */
+function BookPanel({ read, buddyId, onAdded }) {
+  const navigate = useNavigate();
+  const [adding, setAdding] = useState(false);
+
+  const cover = read.book?.coverImageUrl;
+  const pages = read.book?.pages;
+
+  const open = () => {
+    const route = read.myBookFormat === 'epub' ? 'viewepub' : 'viewpdf';
+    navigate(`/${route}/${read.myBookId}`);
+  };
+
+  const add = async () => {
+    setAdding(true);
+    try {
+      await buddiesApi.addReadBook(buddyId, read._id);
+      toast.success('Added to your library.');
+      await onAdded();
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'Could not add that book.');
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  return (
+    <div className="flex gap-4">
+      {cover ? (
+        <img
+          src={cover}
+          alt=""
+          loading="lazy"
+          className="h-28 w-20 shrink-0 rounded-lg bg-surface-variant object-cover"
+          style={{ borderCurve: 'continuous' }}
+        />
+      ) : (
+        <div className="flex h-28 w-20 shrink-0 items-center justify-center rounded-lg bg-surface-variant">
+          <FiBookOpen size={22} className="text-ink-faint" />
+        </div>
+      )}
+
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <p className="min-w-0 break-words text-body_Large font-semibold text-ink">
+            {read.bookTitle}
+          </p>
+          <p className="text-body_Small text-ink-soft">
+            {pages ? `${pages} pages` : null}
+            {pages && (read.targetPage || read.targetDate) ? ' · ' : null}
+            {read.targetPage ? `target page ${read.targetPage}` : null}
+            {read.targetPage && read.targetDate ? ' · ' : null}
+            {read.targetDate ? `by ${new Date(read.targetDate).toLocaleDateString()}` : null}
+          </p>
+        </div>
+
+        {read.myBookId ? (
+          <button
+            type="button"
+            onClick={open}
+            className="self-start rounded-full bg-brand px-4 py-2 text-body_Small font-semibold text-white transition-colors hover:bg-brand-strong"
+          >
+            Open the book
+          </button>
+        ) : read.canAddToLibrary ? (
+          <button
+            type="button"
+            onClick={add}
+            disabled={adding}
+            className="self-start rounded-full bg-brand px-4 py-2 text-body_Small font-semibold text-white transition-colors hover:bg-brand-strong disabled:opacity-60"
+          >
+            {adding ? 'Adding…' : 'Add to my library'}
+          </button>
+        ) : (
+          <p className="text-body_Small text-ink-soft">
+            This is your buddy’s own copy, so it cannot be shared. Add the book to your
+            library and your progress will line up here.
+          </p>
+        )}
+      </div>
     </div>
   );
 }
