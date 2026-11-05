@@ -1,48 +1,86 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import AppShell from "./Components/AppShell";
 import SplashScreen from "./Components/SplashScreen";
 
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import GoalCelebrationOverlay from "./Components/GoalCelebrationOverlay";
 
-import Home from "./Pages/Home";
-import Library from "./Pages/Library";
-import Notes from "./Pages/Notes";
-import Explore from "./Pages/Explore";
+// Eager: this is the route a first-time visitor lands on, so it must not
+// wait on a second round trip before anything appears.
+import Landing from "./Pages/Landing";
+
+/*
+ * Everything past the front door loads on demand.
+ *
+ * The landing page is the first thing a visitor downloads, and it used to
+ * arrive behind the entire application -- the reader, the EPUB viewer, the
+ * admin panel, all of it -- before a single word could be painted. Splitting
+ * them means a first-time visitor fetches the page they asked for and nothing
+ * else, and a signed-in reader pays for a chunk only when they open that part
+ * of the app.
+ */
+const Home = lazy(() => import("./Pages/Home"));
+const Library = lazy(() => import("./Pages/Library"));
+const Notes = lazy(() => import("./Pages/Notes"));
+const Explore = lazy(() => import("./Pages/Explore"));
+const Focus = lazy(() => import("./Pages/Focus"));
+const ViewPdf = lazy(() => import("./Features/ViewPdf"));
+const ViewEpub = lazy(() => import("./Features/ViewEpub"));
+const Group = lazy(() => import("./Pages/Groups/Group"));
+const GroupComments = lazy(() => import("./Pages/Groups/GroupComments"));
+const Groups = lazy(() => import("./Pages/Groups/Groups"));
+const Communities = lazy(() => import("./Pages/Communities/Communities"));
+const Community = lazy(() => import("./Pages/Communities/Community"));
+const JoinCommunity = lazy(() => import("./Pages/Communities/JoinCommunity"));
+const Buddies = lazy(() => import("./Pages/Buddies/Buddies"));
+const BuddyProfile = lazy(() => import("./Pages/Buddies/BuddyProfile"));
+const BuddySpace = lazy(() => import("./Pages/Buddies/BuddySpace"));
+const Signup = lazy(() => import("./Pages/Auth/Signup"));
+const Login = lazy(() => import("./Pages/Auth/Login"));
+const ForgotPassword = lazy(() => import("./Pages/Auth/ForgotPassword"));
+const Otp = lazy(() => import("./Pages/Auth/Otp"));
+const NewPassword = lazy(() => import("./Pages/Auth/NewPassword"));
+const Profile = lazy(() => import("./Pages/Profile/Profile"));
+const Settings = lazy(() => import("./Pages/Profile/Settings"));
+const Statistics = lazy(() => import("./Pages/Profile/Statistics"));
+const Privacy = lazy(() => import("./Pages/Legal/Privacy"));
+const Terms = lazy(() => import("./Pages/Legal/Terms"));
+const Dashboard = lazy(() => import("./Pages/Admin/Dashboard"));
+const Readers = lazy(() => import("./Pages/Admin/Readers"));
+const Books = lazy(() => import("./Pages/Admin/Books"));
+const AdminLogin = lazy(() => import("./Pages/Admin/AdminLogin"));
+const AdminAcceptInvite = lazy(() => import("./Pages/Admin/AdminAcceptInvite"));
+
+
 import TimerControler from "./Components/TimerControler";
-import Focus from "./Pages/Focus";
 
-import ViewPdf from "./Features/ViewPdf";
 
-import Group from "./Pages/Groups/Group";
-import GroupComments from "./Pages/Groups/GroupComments";
-import Groups from "./Pages/Groups/Groups";
-import Communities from "./Pages/Communities/Communities";
-import Community from "./Pages/Communities/Community";
-import JoinCommunity from "./Pages/Communities/JoinCommunity";
-import Buddies from "./Pages/Buddies/Buddies";
-import BuddyProfile from "./Pages/Buddies/BuddyProfile";
-import BuddySpace from "./Pages/Buddies/BuddySpace";
-import Splash from "./Pages/Splash";
-import Signup from "./Pages/Auth/Signup";
-import Login from "./Pages/Auth/Login";
-import ForgotPassword from "./Pages/Auth/ForgotPassword";
-import Otp from "./Pages/Auth/Otp";
-import NewPassword from "./Pages/Auth/NewPassword";
-import Profile from "./Pages/Profile/Profile";
-import Settings from "./Pages/Profile/Settings";
-import Statistics from "./Pages/Profile/Statistics";
-import Privacy from "./Pages/Legal/Privacy";
-import Terms from "./Pages/Legal/Terms";
-import ViewEpub from "./Features/ViewEpub";
-import Dashboard from "./Pages/Admin/Dashboard";
-import Readers from "./Pages/Admin/Readers";
-import Books from "./Pages/Admin/Books";
-import AdminLogin from "./Pages/Admin/AdminLogin";
-import AdminAcceptInvite from "./Pages/Admin/AdminAcceptInvite";
 
 /** How long the splash holds before the app appears. */
 const SPLASH_MS = 1400;
+
+/**
+ * Who `/` is for.
+ *
+ * A signed-out visitor gets the landing page. A signed-in reader gets their
+ * library, because somebody who already uses ReadHub has no use for a pitch --
+ * and because this is the route the app itself opens on.
+ *
+ * Read synchronously during render rather than in an effect, so a returning
+ * reader never sees a frame of marketing before being redirected away.
+ */
+function LandingOrHome() {
+  let signedIn = false;
+  try {
+    signedIn = Boolean(localStorage.getItem("token"));
+  } catch {
+    // Private mode, or storage blocked. Treat it as signed out: the landing
+    // page is the safe answer for somebody we cannot identify.
+    signedIn = false;
+  }
+
+  return signedIn ? <Navigate to="/home" replace /> : <Landing />;
+}
 
 function App() {
   const location = useLocation();
@@ -87,14 +125,21 @@ function App() {
   // Not for the admin panel: that is a different job, done by someone at work,
   // and a reader's splash screen in front of it is only a delay.
   const isAdmin = location.pathname.startsWith("/admin");
-  const [booting, setBooting] = useState(!isAdmin);
+  /*
+    Nor for the landing page. That splash exists to make the web app feel like
+    the phone app; in front of a marketing page it is 1.4 seconds of brand
+    animation standing between a stranger and the reason to care, which is the
+    one place on the whole site where a delay costs the most.
+  */
+  const isLanding = location.pathname === "/";
+  const [booting, setBooting] = useState(!isAdmin && !isLanding);
 
   useEffect(() => {
-    if (isAdmin) return;
+    if (isAdmin || isLanding) return;
 
     const timer = setTimeout(() => setBooting(false), SPLASH_MS);
     return () => clearTimeout(timer);
-  }, [isAdmin]);
+  }, [isAdmin, isLanding]);
 
   const [showGoalCelebration, setShowGoalCelebration] = useState(false);
 
@@ -119,7 +164,16 @@ function App() {
     }
   }, [location.pathname]);
 
+  /*
+    A plain hold while a chunk arrives.
+
+    The app's own splash would be wrong here -- it is a boot animation, and a
+    reader moving between two screens they are already inside has not rebooted
+    anything. This is a blank surface of the right colour, which is what makes
+    a fast chunk look like no wait at all.
+  */
   const routes = (
+    <Suspense fallback={<div className="min-h-dvh bg-page" aria-busy="true" />}>
     <Routes>
         <Route path="/home" element={<Home />} />
         <Route path="/library" element={<Library />} />
@@ -146,10 +200,13 @@ function App() {
         <Route path="/viewpdf/:fileId" element={<ViewPdf />} />
         <Route path="/viewepub/:fileId" element={<ViewEpub />} />
 
-        {/* The web app opens on the splash and hands straight to auth. The
-            three explanatory slides the phone app shows now sit beside the
-            sign-in form instead. */}
-        <Route path="/" element={<Splash />} />
+        {/*
+            `/` is the landing page for anybody not signed in, and a straight
+            redirect for anybody who is. A returning reader opening the app
+            should get their library, not a pitch for the product they already
+            use.
+        */}
+        <Route path="/" element={<LandingOrHome />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgotpassword" element={<ForgotPassword />} />
@@ -164,6 +221,7 @@ function App() {
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin/accept-invite" element={<AdminAcceptInvite />} />
     </Routes>
+    </Suspense>
   );
 
   if (booting) return <SplashScreen />;
