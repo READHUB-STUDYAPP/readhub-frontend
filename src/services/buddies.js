@@ -86,6 +86,17 @@ export const buddiesApi = {
     return data;
   },
 
+  /**
+   * Puts the shared book in my own library.
+   *
+   * A book belongs to one reader, so a pair need a copy each. This is how the
+   * partner gets theirs when it was not handed over as the read started.
+   */
+  async addReadBook(buddyId, readId) {
+    const { data } = await axiosConfig.post(`buddies/${buddyId}/reads/${readId}/library`, {});
+    return data;
+  },
+
   async abandonRead(buddyId, readId) {
     const { data } = await axiosConfig.delete(`buddies/${buddyId}/reads/${readId}`);
     return data;
